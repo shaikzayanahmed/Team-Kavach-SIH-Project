@@ -68,11 +68,21 @@ Navigate to **`http://localhost:8080`** and allow camera permissions when prompt
 
 ```
 .
-├── index.html        # Tactical command center UI, modals & WebGL shaders
-├── style.css         # Tactical HUD styles, glassmorphism, reticles & animations
-├── app.js            # SentinelEngine: CV inference, tracking, biometrics & DB
-├── .gitignore        # Git ignore rules
-└── README.md         # Documentation
+├── index.html            # Tactical command center UI, modals & WebGL shaders
+├── style.css             # Tactical HUD styles, glassmorphism, reticles & animations
+├── js/                   # Modular ES6 Application Architecture (Zero-Build)
+│   ├── main.js           # SentinelApp orchestrator & detection lifecycle
+│   ├── engine/
+│   │   ├── tracker.js    # Multi-target spatial tracking & social analytics
+│   │   ├── vision.js     # Biometrics, attire classification & item detection
+│   │   └── hud.js        # Minimalist canvas tactical reticles & overlays
+│   ├── services/
+│   │   ├── db.js         # Unified storage service & CSV/JSON exporter
+│   │   └── audio.js      # Web Audio synthesizer & siren engine
+│   └── ui/
+│       └── modals.js     # Modal controllers & forensic inspector dialogs
+├── .gitignore            # Git ignore rules
+└── README.md             # Documentation
 ```
 
 ---
