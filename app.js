@@ -1,4 +1,4 @@
-// Sentinel-Eye Command Engine v2.5
+// Sentinel-Eye Command Engine v2.6 - Clean Minimalist HUD Edition
 // Advanced Realtime AI Multi-Target Tracking, Unknown Individual Activity Logging,
 // Social Interaction Analysis, In-Hand Item Detection & Forensic Dossier Database
 
@@ -17,6 +17,12 @@ class SentinelEngine {
     this.isLockdown = false;
     this.soundEnabled = true;
     this.visionMode = 'normal';
+    
+    // HUD Customization & Clean Optics Settings
+    this.hudMode = 'minimal'; // 'minimal' (default: clean reticle), 'tactical' (wireframe details), 'off' (raw video)
+    this.isTargetCardVisible = true;
+    this.isTargetCardMinimized = false;
+    this.isScanlinesVisible = true;
     
     this.stats = {
       intrusions: 0,
@@ -200,7 +206,6 @@ class SentinelEngine {
   }
 
   initDefaultUnknownDB() {
-    // Start with a demonstration historical record or clean
     const timeNow = new Date();
     const timeEarlier = new Date(timeNow.getTime() - 15 * 60 * 1000);
     
@@ -452,7 +457,7 @@ class SentinelEngine {
   async initCamera() {
     const statusText = document.getElementById('camera-status-text');
     try {
-      if (statusText) statusText.innerText = 'CONNECTING OPTICS...';
+      if (statusText) statusText.innerText = 'CONNECTING...';
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -473,12 +478,12 @@ class SentinelEngine {
       this.resizeCanvas();
       window.addEventListener('resize', () => this.resizeCanvas());
 
-      if (statusText) statusText.innerText = 'POST 1 - LIVE OPTICS';
+      if (statusText) statusText.innerText = 'POST 1 - OPTICS';
       this.addAlert('Optical video stream synchronized successfully (Post 1)', 'INFO', 'OPTICS', 100);
       this.playBeep('ping');
     } catch (err) {
       console.error('Camera access error:', err);
-      if (statusText) statusText.innerText = 'NO CAMERA DETECTED / PERMISSION DENIED';
+      if (statusText) statusText.innerText = 'NO CAMERA / DENIED';
       this.addAlert('Camera hardware access denied. Check browser permissions.', 'CRITICAL', 'HARDWARE', 0);
       this.startSimulatedFeed();
     }
@@ -496,12 +501,12 @@ class SentinelEngine {
   async loadAIModel() {
     const modelBadge = document.getElementById('ai-model-status');
     try {
-      if (modelBadge) modelBadge.innerText = 'LOADING AI WEIGHTS (COCO-SSD)...';
+      if (modelBadge) modelBadge.innerText = 'LOADING AI WEIGHTS...';
       
       if (window.cocoSsd) {
         this.model = await window.cocoSsd.load();
         if (modelBadge) {
-          modelBadge.innerText = 'AI NEURAL CORE: ONLINE (MULTI-TRACK & LOGS)';
+          modelBadge.innerText = 'AI NEURAL CORE: ONLINE (CLEAN HUD)';
           modelBadge.className = 'font-data-mono text-[11px] text-cyan-400 border border-cyan-500/40 bg-cyan-950/40 px-2 py-0.5 rounded';
         }
         this.addAlert('COCO-SSD AI Core & Unknown Activity Logger active', 'INFO', 'NEURAL', 99);
@@ -588,7 +593,7 @@ class SentinelEngine {
     const matchedTrackIds = new Set();
     const currentFrameTargets = [];
 
-    personDetections.forEach((personPred, idx) => {
+    personDetections.forEach((personPred) => {
       const [vx, vy, vw, vh] = personPred.bbox;
       const rx = vx * scaleX;
       const ry = vy * scaleY;
@@ -600,7 +605,7 @@ class SentinelEngine {
 
       // Match with existing active tracks based on nearest centroid
       let bestTrackId = null;
-      let minDistance = 160; // pixel distance threshold
+      let minDistance = 160;
 
       for (const [trackId, track] of this.activeTracks.entries()) {
         if (matchedTrackIds.has(trackId)) continue;
@@ -774,11 +779,9 @@ class SentinelEngine {
         const proximityThreshold = Math.max(w1, w2) * 1.8;
 
         if (distance < proximityThreshold) {
-          // In conversational proximity
           t1.interactingWith = t2.trackRef.match.name || t2.id;
           t2.interactingWith = t1.trackRef.match.name || t1.id;
 
-          // Record interaction in t1
           const t1PartnerName = t2.trackRef.match.name || t2.id;
           let t1Inter = t1.trackRef.interactions.find(int => int.targetName === t1PartnerName);
           if (!t1Inter) {
@@ -793,7 +796,6 @@ class SentinelEngine {
             t1Inter.durationSeconds++;
           }
 
-          // Record interaction in t2
           const t2PartnerName = t1.trackRef.match.name || t1.id;
           let t2Inter = t2.trackRef.interactions.find(int => int.targetName === t2PartnerName);
           if (!t2Inter) {
@@ -808,8 +810,9 @@ class SentinelEngine {
             t2Inter.durationSeconds++;
           }
 
-          // Draw visual social connection beam on HUD
-          this.drawSocialConnection(cx1, cy1, cx2, cy2, t1Inter.durationSeconds);
+          if (this.hudMode !== 'off') {
+            this.drawSocialConnection(cx1, cy1, cx2, cy2, t1Inter.durationSeconds);
+          }
         }
       }
     }
@@ -821,7 +824,6 @@ class SentinelEngine {
       if (!matchedTrackIds.has(trackId)) {
         track.missedFrames++;
         if (track.missedFrames > 60 && track.status === 'ACTIVE') {
-          // Target departed the frame
           track.status = 'DEPARTED';
           track.activityTimeline.push({
             time: timeStr,
@@ -834,7 +836,6 @@ class SentinelEngine {
           this.updateBadges();
         }
       } else {
-        // Active track: update its executive summary and sync to DB
         track.summaryReport = this.generateExecutiveSummary(track);
         if (track.isUnknown) {
           this.syncTrackToUnknownDB(track);
@@ -842,24 +843,28 @@ class SentinelEngine {
       }
     }
 
-    // Draw HUD overlays for each detected target
-    currentFrameTargets.forEach(target => {
-      const [rx, ry, rw, rh] = target.bbox;
-      this.drawTacticalPersonHUD(rx, ry, rw, rh, target);
-    });
+    // Draw clean HUD overlays for each detected target
+    if (this.hudMode !== 'off') {
+      currentFrameTargets.forEach(target => {
+        const [rx, ry, rw, rh] = target.bbox;
+        this.drawTacticalPersonHUD(rx, ry, rw, rh, target);
+      });
 
-    // Draw standalone objects not held
-    itemDetections.forEach((itemPred) => {
-      const isClaimed = this.detectedTargets.some(t => t.holding.some(h => h.raw === itemPred));
-      if (!isClaimed) {
-        const [x, y, width, height] = itemPred.bbox;
-        const rx = x * scaleX;
-        const ry = y * scaleY;
-        const rw = width * scaleX;
-        const rh = height * scaleY;
-        this.drawStandaloneItemBox(rx, ry, rw, rh, itemPred.class.toUpperCase(), Math.round(itemPred.score * 100));
+      // Draw subtle standalone objects not held
+      if (this.hudMode === 'tactical') {
+        itemDetections.forEach((itemPred) => {
+          const isClaimed = this.detectedTargets.some(t => t.holding.some(h => h.raw === itemPred));
+          if (!isClaimed) {
+            const [x, y, width, height] = itemPred.bbox;
+            const rx = x * scaleX;
+            const ry = y * scaleY;
+            const rw = width * scaleX;
+            const rh = height * scaleY;
+            this.drawStandaloneItemBox(rx, ry, rw, rh, itemPred.class.toUpperCase(), Math.round(itemPred.score * 100));
+          }
+        });
       }
-    });
+    }
 
     // Update active counters
     this.stats.activeTrackers = this.detectedTargets.length;
@@ -970,7 +975,6 @@ class SentinelEngine {
     const vRatio = h / frameH;
     const aspect = w / h;
 
-    // Height Category Estimation
     let estHeight = '~5\'9" (175 cm)';
     let heightCategory = 'Average Stature';
     if (vRatio > 0.75) {
@@ -987,12 +991,10 @@ class SentinelEngine {
       heightCategory = 'Compact Build';
     }
 
-    // Build estimation
     let build = 'Athletic / Proportionate';
     if (aspect < 0.38) build = 'Slender / Lean Build';
     else if (aspect > 0.52) build = 'Broad / Heavy Build';
 
-    // Face & Skin Tone Sampling (Top 20% of bounding box)
     let faceComplexion = 'Fair / Light Complexion';
     let maskDetected = 'None Detected';
 
@@ -1032,7 +1034,6 @@ class SentinelEngine {
             faceComplexion = 'Dark / Deep Complexion';
           }
 
-          // Check if lower face area is covered (mask estimation)
           if (avgR < 50 && avgG < 50 && avgB < 50 && brightness < 50) {
             maskDetected = 'Possible Dark Mask / Cover';
           }
@@ -1060,13 +1061,11 @@ class SentinelEngine {
         return { upper: { name: 'Navy Blue', hex: '#1e3a8a' }, lower: { name: 'Dark Trousers', hex: '#1f2937' }, summary: 'Dark Apparel' };
       }
 
-      // Upper Torso region: y + 25% to y + 60%
       const upperY = Math.max(0, Math.floor(y + h * 0.25));
       const upperH = Math.max(1, Math.floor(h * 0.35));
       const upperX = Math.max(0, Math.floor(x + w * 0.2));
       const upperW = Math.max(1, Math.floor(w * 0.6));
 
-      // Lower Body region: y + 65% to y + 95%
       const lowerY = Math.max(0, Math.floor(y + h * 0.65));
       const lowerH = Math.max(1, Math.floor(h * 0.30));
       const lowerX = Math.max(0, Math.floor(x + w * 0.2));
@@ -1223,113 +1222,130 @@ class SentinelEngine {
   }
 
   // ----------------------------------------------------
-  // TACTICAL HUD DRAWING (CANVAS OVERLAYS)
+  // TACTICAL HUD DRAWING (CLEAN & NON-OBSTRUCTIVE)
   // ----------------------------------------------------
 
   drawTacticalPersonHUD(x, y, w, h, target) {
+    if (this.hudMode === 'off') return;
+
     const ctx = this.ctx;
     const color = target.color;
-    const cornerLength = Math.min(22, w / 4, h / 4);
+    const cornerLength = Math.min(16, w / 4, h / 4);
 
     ctx.save();
     
+    // Thin, sleek glowing brackets (1.5px) - Minimal obstruction
     ctx.shadowColor = color;
-    ctx.shadowBlur = target.match.type === 'CRIMINAL' ? 14 : 8;
+    ctx.shadowBlur = target.match.type === 'CRIMINAL' ? 10 : 4;
     ctx.strokeStyle = color;
-    ctx.lineWidth = target.match.type === 'CRIMINAL' ? 2.5 : 2;
+    ctx.lineWidth = 1.5;
 
     // Corner brackets
     ctx.beginPath();
+    // Top-Left
     ctx.moveTo(x, y + cornerLength);
     ctx.lineTo(x, y);
     ctx.lineTo(x + cornerLength, y);
-
+    // Top-Right
     ctx.moveTo(x + w - cornerLength, y);
     ctx.lineTo(x + w, y);
     ctx.lineTo(x + w, y + cornerLength);
-
+    // Bottom-Right
     ctx.moveTo(x + w, y + h - cornerLength);
     ctx.lineTo(x + w, y + h);
     ctx.lineTo(x + w - cornerLength, y + h);
-
+    // Bottom-Left
     ctx.moveTo(x + cornerLength, y + h);
     ctx.lineTo(x, y + h);
     ctx.lineTo(x, y + h - cornerLength);
     ctx.stroke();
 
-    // Center Tactical Reticle
-    const cx = x + w / 2;
-    const cy = y + h * 0.35;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-    ctx.moveTo(cx - 10, cy);
-    ctx.lineTo(cx + 10, cy);
-    ctx.moveTo(cx, cy - 10);
-    ctx.lineTo(cx, cy + 10);
-    ctx.stroke();
+    // Sleek Micro-Pill Tag above the head (Ultra-compact, semi-transparent)
+    const displayName = target.match.type === 'WHITELIST' 
+      ? `ME (${target.match.name.split(' ')[0]})`
+      : (target.match.type === 'CRIMINAL' ? `WANTED: ${target.match.name}` : `${target.id} • ${target.durationFormatted || '0m 01s'}`);
 
-    // Top Identity Header Box
-    const headerWidth = Math.max(w, 240);
-    const headerHeight = 32;
+    ctx.font = 'bold 9px "JetBrains Mono", monospace';
+    const textMetrics = ctx.measureText(displayName);
+    const pillWidth = textMetrics.width + 20;
+    const pillHeight = 18;
+    const pillX = Math.max(4, Math.min(this.canvas.width - pillWidth - 4, x + (w - pillWidth) / 2));
+    const pillY = Math.max(pillHeight + 4, y - pillHeight - 4);
+
     ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(6, 14, 28, 0.94)';
-    ctx.fillRect(x, y - headerHeight - 4, headerWidth, headerHeight);
+    // Semi-transparent backdrop with subtle rounded edges
+    ctx.fillStyle = 'rgba(6, 14, 28, 0.72)';
+    this.roundRect(ctx, pillX, pillY, pillWidth, pillHeight, 3, true, false);
+    
     ctx.strokeStyle = color;
-    ctx.strokeRect(x, y - headerHeight - 4, headerWidth, headerHeight);
+    ctx.lineWidth = 1;
+    this.roundRect(ctx, pillX, pillY, pillWidth, pillHeight, 3, false, true);
 
-    let titlePrefix = `[${target.id}]`;
-    if (target.match.type === 'WHITELIST') titlePrefix = `🛡️ [AUTHORIZED]`;
-    if (target.match.type === 'CRIMINAL') titlePrefix = `🚨 [WANTED MATCH]`;
-
+    // Status Dot
     ctx.fillStyle = color;
-    ctx.font = 'bold 11px "JetBrains Mono", monospace';
-    ctx.fillText(`${titlePrefix} ${target.match.type === 'WHITELIST' ? target.match.name : (target.isUnknown ? 'UNKNOWN INDIVIDUAL' : target.match.name)}`, x + 6, y - 19);
+    ctx.beginPath();
+    ctx.arc(pillX + 8, pillY + pillHeight / 2, 2.5, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Duration timer & Height
-    ctx.fillStyle = '#ffba4b';
-    ctx.font = '10px "JetBrains Mono", monospace';
-    const subHeader = `⏱️ TIME SPENT: ${target.durationFormatted || '0m 01s'} | ${target.biometrics ? target.biometrics.estHeight : '~5\'10"'}`;
-    ctx.fillText(subHeader, x + 6, y - 7);
-
-    // Bottom Telemetry Box (Carried Items, Attire & Social)
-    const telemetryBoxY = y + h + 6;
-    const telemetryH = 56;
-    ctx.fillStyle = 'rgba(6, 14, 28, 0.92)';
-    ctx.fillRect(x, telemetryBoxY, headerWidth, telemetryH);
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.35)';
-    ctx.strokeRect(x, telemetryBoxY, headerWidth, telemetryH);
-
-    // Line 1: In-Hand / Carried Items
-    const holdingStr = target.holding.length > 0 
-      ? `✋ HOLDING: ${target.holding.map(i => i.class).join(', ')}`
-      : `✋ HANDS: CLEAR`;
-    ctx.fillStyle = target.holding.length > 0 ? '#00e5ff' : '#849396';
-    ctx.font = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillText(holdingStr, x + 6, telemetryBoxY + 14);
-
-    // Line 2: Attire & Complexion
-    const attireStr = `👔 ${target.attire.upper.name} / ${target.attire.lower.name} | ${target.biometrics.faceComplexion.split(' ')[0]}`;
+    // Text Label
     ctx.fillStyle = '#dae3f6';
-    ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillText(attireStr.substring(0, 36), x + 6, telemetryBoxY + 28);
+    ctx.fillText(displayName, pillX + 15, pillY + 12.5);
 
-    // Line 3: Social Interaction status ("Who he was talking to")
-    const socialStr = target.interactingWith 
-      ? `💬 TALKING TO: ${target.interactingWith}`
-      : `👤 STATUS: SOLO (NO PROXIMITY)`;
-    ctx.fillStyle = target.interactingWith ? '#00ff9d' : '#849396';
-    ctx.font = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillText(socialStr.substring(0, 36), x + 6, telemetryBoxY + 42);
+    // Carried Weapon / Suspicious Item Warning Tag (Only shown if weapon detected)
+    const weaponItem = (target.holding || []).find(i => ['KNIFE', 'SCISSORS', 'GUN'].includes(i.class));
+    if (weaponItem) {
+      const weaponTag = `⚠️ ${weaponItem.class}`;
+      const wMetrics = ctx.measureText(weaponTag);
+      const wWidth = wMetrics.width + 12;
+      const wX = pillX;
+      const wY = pillY - 18;
+
+      ctx.fillStyle = 'rgba(255, 69, 58, 0.85)';
+      this.roundRect(ctx, wX, wY, wWidth, 16, 3, true, false);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(weaponTag, wX + 6, wY + 11.5);
+    }
+
+    // If in TACTICAL HUD mode, show clean single-line sub-tag
+    if (this.hudMode === 'tactical') {
+      const subTag = `${target.attire.upper.name} • ${target.biometrics.estHeight.split(' ')[0]}`;
+      ctx.font = '8px "JetBrains Mono", monospace';
+      const subMetrics = ctx.measureText(subTag);
+      const subW = subMetrics.width + 10;
+      const subX = Math.max(4, Math.min(this.canvas.width - subW - 4, x + (w - subW) / 2));
+      const subY = y + h + 4;
+
+      ctx.fillStyle = 'rgba(6, 14, 28, 0.65)';
+      this.roundRect(ctx, subX, subY, subW, 14, 2, true, false);
+      ctx.fillStyle = '#849396';
+      ctx.fillText(subTag, subX + 5, subY + 10);
+    }
 
     ctx.restore();
+  }
+
+  roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
   }
 
   drawSocialConnection(x1, y1, x2, y2, durationSec) {
     const ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = 'rgba(0, 255, 157, 0.75)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(0, 255, 157, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
     
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -1339,33 +1355,33 @@ class SentinelEngine {
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
 
-    ctx.fillStyle = 'rgba(6, 14, 28, 0.95)';
-    ctx.fillRect(midX - 55, midY - 12, 110, 24);
+    ctx.fillStyle = 'rgba(6, 14, 28, 0.8)';
+    this.roundRect(ctx, midX - 35, midY - 9, 70, 18, 3, true, false);
     ctx.strokeStyle = '#00ff9d';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 0.8;
     ctx.setLineDash([]);
-    ctx.strokeRect(midX - 55, midY - 12, 110, 24);
+    this.roundRect(ctx, midX - 35, midY - 9, 70, 18, 3, false, true);
 
     ctx.fillStyle = '#00ff9d';
-    ctx.font = 'bold 10px "JetBrains Mono", monospace';
+    ctx.font = 'bold 8px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`💬 CONVERSING (${durationSec}s)`, midX, midY + 4);
+    ctx.fillText(`💬 TALKING ${durationSec}s`, midX, midY + 3.5);
     ctx.restore();
   }
 
   drawStandaloneItemBox(x, y, w, h, label, score) {
     const ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.6)';
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 3]);
+    ctx.setLineDash([3, 3]);
     ctx.strokeRect(x, y, w, h);
 
-    ctx.fillStyle = 'rgba(6, 14, 28, 0.8)';
-    ctx.fillRect(x, y - 16, Math.max(w, 80), 14);
+    ctx.fillStyle = 'rgba(6, 14, 28, 0.7)';
+    ctx.fillRect(x, y - 13, Math.max(w, 60), 12);
     ctx.fillStyle = '#00daf3';
-    ctx.font = '9px "JetBrains Mono", monospace';
-    ctx.fillText(`${label} ${score}%`, x + 4, y - 5);
+    ctx.font = '8px "JetBrains Mono", monospace';
+    ctx.fillText(`${label} ${score}%`, x + 3, y - 4);
     ctx.restore();
   }
 
@@ -1375,20 +1391,20 @@ class SentinelEngine {
     const h = this.canvas.height;
     
     ctx.save();
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)';
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
+    ctx.strokeRect(w * 0.25, h * 0.25, w * 0.5, h * 0.5);
     
     ctx.beginPath();
-    ctx.moveTo(w / 2 - 20, h / 2);
-    ctx.lineTo(w / 2 + 20, h / 2);
-    ctx.moveTo(w / 2, h / 2 - 20);
-    ctx.lineTo(w / 2, h / 2 + 20);
+    ctx.moveTo(w / 2 - 15, h / 2);
+    ctx.lineTo(w / 2 + 15, h / 2);
+    ctx.moveTo(w / 2, h / 2 - 15);
+    ctx.lineTo(w / 2, h / 2 + 15);
     ctx.stroke();
     
-    ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
-    ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillText('STANDBY: SCANNING OPTICAL PERIMETER', w * 0.2 + 8, h * 0.2 - 8);
+    ctx.fillStyle = 'rgba(0, 229, 255, 0.5)';
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillText('STANDBY: SCANNING OPTICAL PERIMETER', w * 0.25 + 6, h * 0.25 - 6);
     ctx.restore();
   }
 
@@ -1400,7 +1416,7 @@ class SentinelEngine {
     const card = document.getElementById('live-target-card');
     if (!card) return;
 
-    if (!target) {
+    if (!target || !this.isTargetCardVisible) {
       card.classList.add('hidden');
       return;
     }
@@ -1412,70 +1428,73 @@ class SentinelEngine {
     const durationText = document.getElementById('target-duration-text');
     const holdingVal = document.getElementById('target-holding-text');
     const heightVal = document.getElementById('target-height-val');
-    const faceVal = document.getElementById('target-face-val');
     const interactionVal = document.getElementById('target-interaction-val');
     const upperText = document.getElementById('target-upper-text');
     const upperDot = document.getElementById('target-upper-dot');
     const lowerText = document.getElementById('target-lower-text');
-    const lowerDot = document.getElementById('target-lower-dot');
 
     if (target.match.type === 'WHITELIST') {
-      idBadge.className = 'font-data-mono text-[9px] px-1.5 py-0.5 rounded bg-green-950 text-green-300 border border-green-500/40 font-bold';
-      idBadge.innerText = 'AUTHORIZED FRIENDLY';
-      idVal.className = 'font-bold text-green-400';
-      idVal.innerText = target.match.name;
+      if (idBadge) {
+        idBadge.className = 'font-data-mono text-[8px] px-1 py-0.5 rounded bg-green-950 text-green-300 border border-green-500/40 font-bold';
+        idBadge.innerText = 'FRIENDLY';
+      }
+      if (idVal) {
+        idVal.className = 'font-bold text-green-400 truncate max-w-[130px]';
+        idVal.innerText = target.match.name;
+      }
     } else if (target.match.type === 'CRIMINAL') {
-      idBadge.className = 'font-data-mono text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-500/40 font-bold animate-pulse';
-      idBadge.innerText = 'CRITICAL WANTED MATCH';
-      idVal.className = 'font-bold text-red-400';
-      idVal.innerText = target.match.name;
+      if (idBadge) {
+        idBadge.className = 'font-data-mono text-[8px] px-1 py-0.5 rounded bg-red-950 text-red-300 border border-red-500/40 font-bold animate-pulse';
+        idBadge.innerText = 'WANTED MATCH';
+      }
+      if (idVal) {
+        idVal.className = 'font-bold text-red-400 truncate max-w-[130px]';
+        idVal.innerText = target.match.name;
+      }
     } else {
-      idBadge.className = 'font-data-mono text-[9px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/40 font-bold';
-      idBadge.innerText = `UNVERIFIED [${target.id}]`;
-      idVal.className = 'font-bold text-amber-400';
-      idVal.innerText = 'Unidentified Individual';
+      if (idBadge) {
+        idBadge.className = 'font-data-mono text-[8px] px-1 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/40 font-bold';
+        idBadge.innerText = `${target.id}`;
+      }
+      if (idVal) {
+        idVal.className = 'font-bold text-amber-400 truncate max-w-[130px]';
+        idVal.innerText = 'Unknown Subject';
+      }
     }
 
-    if (durationText) {
-      durationText.innerText = target.durationFormatted || '0m 01s';
-    }
+    if (durationText) durationText.innerText = target.durationFormatted || '0m 01s';
 
     if (holdingVal) {
       if (target.holding.length > 0) {
         holdingVal.innerText = target.holding.map(i => i.class).join(', ');
         holdingVal.className = 'text-cyan-300 font-bold';
       } else {
-        holdingVal.innerText = 'HANDS CLEAR';
+        holdingVal.innerText = 'CLEAR';
         holdingVal.className = 'text-gray-400';
       }
     }
 
     if (heightVal && target.biometrics) {
-      heightVal.innerText = `${target.biometrics.estHeight} / ${target.biometrics.build.split(' ')[0]}`;
-    }
-
-    if (faceVal && target.biometrics) {
-      faceVal.innerText = `${target.biometrics.faceComplexion.split(' ')[0]} / ${target.biometrics.maskDetected}`;
+      heightVal.innerText = `${target.biometrics.estHeight.split(' ')[0]} / ${target.biometrics.build.split(' ')[0]}`;
     }
 
     if (interactionVal) {
       if (target.interactingWith) {
-        interactionVal.innerText = `Talking with ${target.interactingWith}`;
-        interactionVal.className = 'font-bold text-emerald-400';
+        interactionVal.innerText = `With ${target.interactingWith.split(' ')[0]}`;
+        interactionVal.className = 'font-bold text-emerald-400 truncate max-w-[130px]';
       } else {
-        interactionVal.innerText = 'Solo (No Proximity)';
-        interactionVal.className = 'font-bold text-gray-400';
+        interactionVal.innerText = 'Solo';
+        interactionVal.className = 'font-bold text-gray-400 truncate max-w-[130px]';
       }
     }
 
     if (upperText && upperDot && target.attire) {
-      upperText.innerText = target.attire.upper.name;
+      upperText.innerText = target.attire.upper.name.split(' ')[0];
       upperDot.style.backgroundColor = target.attire.upper.hex;
     }
 
-    if (lowerText && lowerDot && target.attire) {
-      lowerText.innerText = target.attire.lower.name;
-      lowerDot.style.backgroundColor = target.attire.lower.hex;
+    if (lowerText && target.attire) {
+      lowerText.innerText = target.attire.lower.name.split(' ')[0];
     }
   }
 
@@ -1527,18 +1546,18 @@ class SentinelEngine {
       barColor = 'bg-[#00ff9d]';
     }
 
-    alertDiv.className = `border ${borderClass} rounded p-3 flex gap-3 relative overflow-hidden transition-all duration-300 transform translate-y-2 opacity-0`;
+    alertDiv.className = `border ${borderClass} rounded p-2.5 flex gap-2.5 relative overflow-hidden transition-all duration-300 transform translate-y-2 opacity-0`;
     alertDiv.innerHTML = `
       <div class="absolute left-0 top-0 bottom-0 w-1 ${barColor}"></div>
-      <div class="flex flex-col gap-1 w-full pl-2">
+      <div class="flex flex-col gap-1 w-full pl-1.5">
         <div class="flex justify-between items-start">
           <span class="font-mono text-xs ${textClass}">${timeStr}</span>
-          <span class="font-space text-[10px] font-bold ${textClass} bg-black/40 px-2 py-0.5 rounded border border-current opacity-90">${level}</span>
+          <span class="font-space text-[9px] font-bold ${textClass} bg-black/40 px-1.5 py-0.5 rounded border border-current opacity-90">${level}</span>
         </div>
         <p class="font-sans text-xs text-[#dae3f6]">${message}</p>
-        <div class="flex gap-2 mt-1">
-          <span class="font-mono text-[10px] text-[#849396] bg-black/40 px-1.5 py-0.5 border border-white/10 rounded">CONF: ${confidence}%</span>
-          <span class="font-mono text-[10px] text-[#849396] bg-black/40 px-1.5 py-0.5 border border-white/10 rounded">SRC: ${source}</span>
+        <div class="flex gap-2 mt-0.5">
+          <span class="font-mono text-[9px] text-[#849396] bg-black/40 px-1.5 py-0.5 border border-white/10 rounded">CONF: ${confidence}%</span>
+          <span class="font-mono text-[9px] text-[#849396] bg-black/40 px-1.5 py-0.5 border border-white/10 rounded">SRC: ${source}</span>
         </div>
       </div>
     `;
@@ -1561,14 +1580,61 @@ class SentinelEngine {
     
     document.querySelectorAll('.vision-btn').forEach(b => {
       if (b.dataset.mode === mode) {
-        b.className = 'vision-btn px-2.5 py-1 text-xs font-mono rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+        b.className = 'vision-btn px-1.5 py-0.5 text-[9px] font-mono rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
       } else {
-        b.className = 'vision-btn px-2.5 py-1 text-xs font-mono rounded bg-black/40 text-gray-400 hover:text-white border border-white/10';
+        b.className = 'vision-btn px-1.5 py-0.5 text-[9px] font-mono rounded bg-black/40 text-gray-400 hover:text-white border border-white/10';
       }
     });
 
     this.playBeep('ping');
     this.addAlert(`Optics filter changed to: ${mode.toUpperCase()}`, 'INFO', 'SHADERS', 100);
+  }
+
+  setHudMode(mode) {
+    this.hudMode = mode;
+    document.querySelectorAll('.hud-mode-btn').forEach(b => {
+      if (b.dataset.hudMode === mode) {
+        b.className = 'hud-mode-btn px-2 py-0.5 text-[9px] font-mono rounded bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 font-bold';
+      } else {
+        b.className = 'hud-mode-btn px-2 py-0.5 text-[9px] font-mono rounded bg-black/40 text-gray-400 hover:text-white border border-white/10';
+      }
+    });
+    this.playBeep('ping');
+  }
+
+  toggleTargetCard() {
+    this.isTargetCardVisible = !this.isTargetCardVisible;
+    const btn = document.getElementById('toggle-target-card-btn');
+    const card = document.getElementById('live-target-card');
+    
+    if (btn) {
+      btn.innerText = this.isTargetCardVisible ? 'VISIBLE' : 'HIDDEN';
+      btn.className = this.isTargetCardVisible
+        ? 'px-2 py-0.5 text-[9px] font-mono rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold'
+        : 'px-2 py-0.5 text-[9px] font-mono rounded bg-black/40 text-gray-400 border border-white/10';
+    }
+
+    if (card) {
+      if (this.isTargetCardVisible) card.classList.remove('hidden');
+      else card.classList.add('hidden');
+    }
+  }
+
+  toggleScanlines() {
+    this.isScanlinesVisible = !this.isScanlinesVisible;
+    const scanlines = document.getElementById('scanlines-layer');
+    const vignette = document.getElementById('vignette-layer');
+    const btn = document.getElementById('toggle-scanlines-btn');
+
+    if (scanlines) scanlines.classList.toggle('scanlines-off', !this.isScanlinesVisible);
+    if (vignette) vignette.classList.toggle('vignette-off', !this.isScanlinesVisible);
+
+    if (btn) {
+      btn.innerText = this.isScanlinesVisible ? 'SCANLINES' : 'CLEAN';
+      btn.className = this.isScanlinesVisible
+        ? 'px-2 py-0.5 text-[9px] font-mono rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+        : 'px-2 py-0.5 text-[9px] font-mono rounded bg-green-500/20 text-green-300 border border-green-400/40 font-bold';
+    }
   }
 
   // ----------------------------------------------------
@@ -1729,7 +1795,6 @@ class SentinelEngine {
 
     modal.classList.remove('hidden');
 
-    // Populate Fields
     document.getElementById('inspector-subject-id').innerText = `SUBJECT DOSSIER: ${dossier.id}`;
     
     const statusBadge = document.getElementById('inspector-status-badge');
@@ -1782,7 +1847,7 @@ class SentinelEngine {
       }
     }
 
-    // Social Interactions ("Who was he talking to")
+    // Social Interactions
     const interactionsContainer = document.getElementById('inspector-interactions-container');
     if (interactionsContainer) {
       if (dossier.interactions && dossier.interactions.length > 0) {
@@ -2112,6 +2177,36 @@ class SentinelEngine {
         this.setVisionMode(e.target.dataset.mode);
       });
     });
+
+    // HUD Mode buttons (Minimal, Tactical, Off)
+    document.querySelectorAll('.hud-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.setHudMode(e.currentTarget.dataset.hudMode);
+      });
+    });
+
+    // Toggle Target Card button
+    const toggleCardBtn = document.getElementById('toggle-target-card-btn');
+    if (toggleCardBtn) {
+      toggleCardBtn.addEventListener('click', () => this.toggleTargetCard());
+    }
+
+    // Minimize Target Card inside header
+    const minimizeCardBtn = document.getElementById('minimize-target-card-btn');
+    const cardBody = document.getElementById('target-card-body');
+    if (minimizeCardBtn && cardBody) {
+      minimizeCardBtn.addEventListener('click', () => {
+        this.isTargetCardMinimized = !this.isTargetCardMinimized;
+        cardBody.classList.toggle('hidden', this.isTargetCardMinimized);
+        minimizeCardBtn.innerText = this.isTargetCardMinimized ? '+' : '─';
+      });
+    }
+
+    // Toggle Scanlines button
+    const toggleScanlinesBtn = document.getElementById('toggle-scanlines-btn');
+    if (toggleScanlinesBtn) {
+      toggleScanlinesBtn.addEventListener('click', () => this.toggleScanlines());
+    }
 
     // Sound toggle button
     const soundBtn = document.getElementById('sound-toggle-btn');
