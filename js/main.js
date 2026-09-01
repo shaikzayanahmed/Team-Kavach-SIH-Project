@@ -1,6 +1,7 @@
 // Sentinel-Eye Main Application Orchestrator (Modular ES6 Architecture)
 import { AudioService } from './services/audio.js';
 import { DatabaseService } from './services/db.js';
+import { NvidiaService } from './services/nvidia.js';
 import { VisionEngine } from './engine/vision.js';
 import { TrackerEngine } from './engine/tracker.js';
 import { HUDEngine } from './engine/hud.js';
@@ -15,6 +16,7 @@ class SentinelApp {
     // Initialize Services & Engines
     this.audio = new AudioService();
     this.db = new DatabaseService();
+    this.nvidia = new NvidiaService();
     this.vision = new VisionEngine(this.sampleCanvas);
     this.tracker = new TrackerEngine();
     this.hud = new HUDEngine(this.canvas);
@@ -22,8 +24,10 @@ class SentinelApp {
       this.db,
       this.audio,
       this.vision,
+      this.nvidia,
       () => this.updateBadges(),
-      () => this.updateBadges()
+      () => this.updateBadges(),
+      () => this.addAlert(this.nvidia.isConfigured() ? 'NVIDIA NIM Intelligence Core: CONFIGURED' : 'NVIDIA NIM API Key purged', 'INFO', 'NVIDIA', 100)
     );
 
     this.model = null;

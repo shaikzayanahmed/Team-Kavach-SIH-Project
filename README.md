@@ -1,8 +1,9 @@
 # 🛡️ SENTINEL-EYE | Autonomous Tactical Computer Vision & Intelligence Command
 
-An advanced client-side Computer Vision and Real-time Multi-Target Tracking platform powered by **TensorFlow.js** and **COCO-SSD**. Designed for automated perimeter surveillance, suspect identification, biometric profiling, and persistent unknown subject activity logging.
+An advanced client-side Computer Vision, Real-time Multi-Target Tracking, and **NVIDIA NIM Multimodal Vision Intelligence** platform. Combines local 60 FPS WebGL tracking with enterprise-grade cloud Vision Foundation Models for automated perimeter surveillance, suspect identification, biometric profiling, and deep forensic dossier generation.
 
-![Sentinel-Eye Tactical Banner](https://img.shields.io/badge/AI%20Core-TensorFlow.js%20COCO--SSD-00e5ff?style=for-the-badge)
+![Sentinel-Eye Tactical Banner](https://img.shields.io/badge/AI%20Core-TensorFlow.js%20%2B%20NVIDIA%20NIM-00e5ff?style=for-the-badge)
+![NVIDIA Vision](https://img.shields.io/badge/NVIDIA%20AI-Llama%203.2%20Vision%20%2F%20NeVA-10b981?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active%20Surveillance-00ff9d?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Platform-Web%20%2F%20HTML5%20%2F%20WebGL-ffba4b?style=for-the-badge)
 
@@ -10,7 +11,13 @@ An advanced client-side Computer Vision and Real-time Multi-Target Tracking plat
 
 ## ⚡ Core Features
 
-### 1. 🔍 Unknown Individual Activity Tracking & Dossier Database
+### 1. 🧠 NVIDIA NIM Multimodal Vision Intelligence (Deep Reasoning)
+- **Deep Multimodal Forensic Scans**: One-click neural visual analysis of subject crops using models like `meta/llama-3.2-11b-vision-instruct`, `meta/llama-3.2-90b-vision-instruct`, and `nvidia/neva-22b`.
+- **Automated Threat Assessment**: Classifies subjects into `LOW`, `MODERATE`, `ELEVATED`, or `CRITICAL` risk tiers with concise tactical rationales.
+- **Concealed Gear & Weapon Risk Reconnaissance**: Visual inspection for concealed objects, backpacks, face coverings, and suspicious demeanor.
+- **Live Optical Sector Interrogation ("Ask AI")**: Real-time Visual Question Answering (VQA) against frozen snapshots of the live camera feed with tactical presets.
+
+### 2. 🔍 Unknown Individual Activity Tracking & Dossier Database
 - **Automated Multi-Target Session IDs**: Assigns persistent tracking identifiers (e.g., `UNK-4819`) to any unrecognized individual entering the camera sector.
 - **Time-on-Site Analytics**: Measures exact timestamps (`First Seen`, `Last Seen`) and live active presence duration (`0m 45s`, `1m 24s`, etc.).
 - **Social Interaction Detection ("Who Was He Talking To")**: Pairwise conversational proximity analysis with real-time HUD connector beams and duration counters (`💬 CONVERSING (24s)`).
@@ -23,15 +30,15 @@ An advanced client-side Computer Vision and Real-time Multi-Target Tracking plat
 - **AI Executive Summary & Chronological Timeline**: Generates natural forensic summaries and timestamped activity logs for every target.
 - **Dossier Management & Export**: Search, filter, export to **JSON** or **CSV**, and generate printable PDF forensic reports (`window.print()`).
 
-### 2. 🛡️ Whitelist Registry (Friendly Personnel)
+### 3. 🛡️ Whitelist Registry (Friendly Personnel)
 - Enroll authorized operators/commanders via 1-click live camera facial capture or from existing unknown dossiers.
 - Whitelisted personnel are verified with green tactical reticles and bypass intruder alerts.
 
-### 3. 🚨 Criminal & Wanted Fugitive Watchlist
+### 4. 🚨 Criminal & Wanted Fugitive Watchlist
 - Cross-references incoming targets against federal and international law enforcement databases (Interpol Red Notices, High Felonies).
 - Built-in simulation trigger for tactical response drills.
 
-### 4. 🎛️ Tactical Command HUD & WebGL Optics
+### 5. 🎛️ Tactical Command HUD & WebGL Optics
 - Military-grade glassmorphic UI with animated WebGL background grid shader.
 - Multi-optics filters: **RGB (Normal)**, **NVG (Night Vision)**, **Thermal IR**, and **Edge/Wireframe**.
 - Emergency lockdown controls with synthesized Web Audio alarms and sirens.

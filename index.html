@@ -93,6 +93,10 @@
         <span class="material-symbols-outlined text-sm">local_police</span>
         <span>CRIMINAL DB (<span id="criminal-count-badge">5</span>)</span>
       </button>
+      <button id="nav-nvidia-btn" class="font-label-caps text-xs tracking-wider text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 px-2.5 py-1 rounded border border-emerald-500/40 transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+        <span class="material-symbols-outlined text-sm text-emerald-400">psychology</span>
+        <span>NVIDIA NIM (<span id="nvidia-status-pill" class="text-[10px]">CONFIG</span>)</span>
+      </button>
     </nav>
 
     <!-- Right Controls -->
@@ -155,6 +159,13 @@
         </div>
         <span id="side-criminal-count" class="font-data-mono text-[10px] bg-red-900/50 px-1.5 py-0.5 rounded text-red-300">5</span>
       </button>
+      <button id="side-nvidia-btn" class="w-full flex items-center justify-between px-3 py-2.5 rounded text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 border border-emerald-500/30 transition-all text-left">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-base text-emerald-400">psychology</span>
+          <span>NVIDIA AI CORE</span>
+        </div>
+        <span id="side-nvidia-status" class="font-data-mono text-[10px] bg-emerald-900/50 px-1.5 py-0.5 rounded text-emerald-300">READY</span>
+      </button>
       <a class="flex items-center gap-3 px-3 py-2.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-white/5 transition-all" href="#">
         <span class="material-symbols-outlined text-base">videocam</span>
         <span>OPTICAL ARRAYS</span>
@@ -216,6 +227,11 @@
 
               <span class="font-data-mono text-[9px] text-gray-400 ml-2">FX:</span>
               <button id="toggle-scanlines-btn" class="px-2 py-0.5 text-[9px] font-mono rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40" title="Toggle Scanline Shader">SCANLINES</button>
+
+              <button id="interrogate-scene-btn" class="ml-2 px-2.5 py-0.5 text-[9px] font-mono rounded bg-emerald-500/30 text-emerald-300 border border-emerald-400/60 font-bold flex items-center gap-1 hover:bg-emerald-500/40 transition-all shadow-[0_0_10px_rgba(16,185,129,0.2)]" title="Interrogate live camera feed with NVIDIA NIM Vision AI">
+                <span class="material-symbols-outlined text-[12px]">psychology</span>
+                <span>AI INTEL</span>
+              </button>
             </div>
 
             <!-- Vision Mode Switcher -->
@@ -781,9 +797,40 @@
           </div>
         </div>
 
-        <!-- Right 8 Columns: Executive Summary, Carried Items, Social Interactions & Chronological Timeline -->
+        <!-- Right 8 Columns: NVIDIA NIM Intelligence, Executive Summary, Carried Items, Social Interactions & Chronological Timeline -->
         <div class="lg:col-span-8 flex flex-col gap-4">
           
+          <!-- NVIDIA NIM Multimodal Forensic Intelligence Card -->
+          <div id="inspector-nvidia-card" class="bg-[#0b1b2b] border border-emerald-500/50 rounded-lg p-4 relative overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-400"></div>
+            
+            <div class="flex flex-wrap justify-between items-center border-b border-emerald-500/30 pb-2 mb-3 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-base text-emerald-400">psychology</span>
+                <span class="font-headline-md text-xs font-bold text-emerald-300">NVIDIA NIM DEEP MULTIMODAL INTELLIGENCE</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="inspector-nvidia-model-tag" class="font-data-mono text-[9px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 font-semibold">LLAMA 3.2 VISION</span>
+                <button id="inspector-nvidia-btn" class="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-black font-data-mono text-xs font-bold rounded flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                  <span class="material-symbols-outlined text-sm">bolt</span>
+                  <span id="inspector-nvidia-btn-text">SCAN WITH NVIDIA AI</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- AI Status / Output area -->
+            <div id="inspector-nvidia-content" class="space-y-2">
+              <p id="inspector-nvidia-placeholder" class="text-xs text-gray-400 font-sans italic flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm text-emerald-400">info</span>
+                Click "SCAN WITH NVIDIA AI" to execute real-time neural vision reasoning across target garments, concealed risks, posture and threat level.
+              </p>
+              
+              <div id="inspector-nvidia-result" class="hidden font-sans text-xs text-gray-200 leading-relaxed whitespace-pre-line bg-black/40 p-3 rounded border border-emerald-500/25 max-h-56 overflow-y-auto custom-scrollbar">
+                <!-- AI analysis text rendered here -->
+              </div>
+            </div>
+          </div>
+
           <!-- Executive AI Summary Report Box -->
           <div class="bg-[#101b2b] border border-amber-500/40 rounded-lg p-4 relative overflow-hidden">
             <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
@@ -834,6 +881,165 @@
 
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- NVIDIA NIM AI CONFIGURATION MODAL -->
+  <div id="nvidia-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel w-full max-w-2xl rounded-xl border border-emerald-500/50 flex flex-col overflow-hidden shadow-[0_0_60px_rgba(16,185,129,0.25)]">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center px-6 py-4 border-b border-emerald-500/30 bg-[#06241a]">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-emerald-400 text-2xl">psychology</span>
+          <div>
+            <h3 class="font-headline-md text-base font-bold text-emerald-300">NVIDIA NIM TACTICAL AI CONFIGURATION</h3>
+            <p class="font-data-mono text-[11px] text-gray-300">NVIDIA Cloud Vision-Language Model Integration Core</p>
+          </div>
+        </div>
+        <button id="close-nvidia-btn" class="p-1 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 font-data-mono text-xs overflow-y-auto max-h-[80vh] custom-scrollbar">
+        <!-- Explanatory banner -->
+        <div class="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-lg flex items-start gap-2.5">
+          <span class="material-symbols-outlined text-emerald-400 text-lg flex-shrink-0 mt-0.5">verified</span>
+          <div class="text-[11px] font-sans text-gray-200 space-y-1">
+            <p class="font-bold text-emerald-300">Enterprise Multimodal Intelligence Powered by NVIDIA NIM</p>
+            <p>Connect your NVIDIA API key to unlock deep visual reasoning, real-time threat profiling, concealed item assessments, and live camera sector interrogation.</p>
+          </div>
+        </div>
+
+        <!-- API Key Field -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="font-bold text-emerald-300 text-[11px] flex items-center gap-1.5">
+              <span>NVIDIA NIM API KEY</span>
+              <span class="text-gray-400 font-normal">(starts with nvapi-)</span>
+            </label>
+            <a href="https://build.nvidia.com" target="_blank" rel="noopener" class="text-cyan-400 hover:text-cyan-300 underline text-[10px] flex items-center gap-1 font-sans">
+              <span>Get free key at build.nvidia.com</span>
+              <span class="material-symbols-outlined text-[10px]">open_in_new</span>
+            </a>
+          </div>
+          <div class="relative flex items-center">
+            <input type="password" id="nvidia-api-key-input" placeholder="nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="w-full bg-[#0a1421] border border-emerald-500/40 rounded px-3 py-2 text-emerald-300 font-data-mono text-xs focus:outline-none focus:border-emerald-400 pr-10" />
+            <button id="nvidia-toggle-key-visibility" type="button" class="absolute right-2.5 text-gray-400 hover:text-white">
+              <span class="material-symbols-outlined text-sm">visibility</span>
+            </button>
+          </div>
+          <p id="nvidia-key-status-hint" class="text-[10px] text-gray-400">Stored strictly in local browser memory (localStorage) for client-side API requests.</p>
+        </div>
+
+        <!-- Vision Model Selector -->
+        <div class="space-y-1.5">
+          <label class="font-bold text-emerald-300 text-[11px]">NVIDIA VISION FOUNDATION MODEL</label>
+          <select id="nvidia-model-select" class="w-full bg-[#0a1421] border border-emerald-500/40 rounded px-3 py-2 text-emerald-300 font-data-mono text-xs focus:outline-none focus:border-emerald-400">
+            <option value="meta/llama-3.2-11b-vision-instruct">Llama 3.2 11B Vision Instruct (Recommended / Fast & Sharp)</option>
+            <option value="meta/llama-3.2-90b-vision-instruct">Llama 3.2 90B Vision Instruct (Deep Tactical Forensic Analysis)</option>
+            <option value="nvidia/neva-22b">NVIDIA NeVA 22B (Multimodal Visual Reasoning)</option>
+          </select>
+        </div>
+
+        <!-- Test Connection Feedback -->
+        <div id="nvidia-test-result-box" class="hidden p-3 rounded bg-black/60 border border-emerald-500/30 text-xs">
+          <span id="nvidia-test-result-text" class="text-emerald-300 font-data-mono"></span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-2 pt-2 border-t border-emerald-500/20">
+          <button id="nvidia-test-btn" class="py-2 px-3 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 rounded font-bold transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">wifi_tethering</span>
+            <span>TEST CONNECTION</span>
+          </button>
+          <button id="nvidia-save-btn" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            <span class="material-symbols-outlined text-sm">save</span>
+            <span>SAVE CONFIGURATION</span>
+          </button>
+          <button id="nvidia-clear-btn" class="py-2 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded font-bold transition-all">
+            <span>PURGE KEY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE OPTICAL SCENE INTERROGATION MODAL -->
+  <div id="scene-interrogate-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel w-full max-w-4xl max-h-[92vh] rounded-xl border border-emerald-500/50 flex flex-col overflow-hidden shadow-[0_0_60px_rgba(16,185,129,0.25)]">
+      
+      <!-- Header -->
+      <div class="flex justify-between items-center px-6 py-3.5 border-b border-emerald-500/30 bg-[#06241a]">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-emerald-400 text-2xl">radar</span>
+          <div>
+            <h3 class="font-headline-md text-base font-bold text-emerald-300">LIVE OPTICAL SECTOR INTERROGATION</h3>
+            <p class="font-data-mono text-[11px] text-gray-300">Real-time Scene Question Answering powered by NVIDIA NIM Vision AI</p>
+          </div>
+        </div>
+        <button id="close-interrogate-btn" class="p-1 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-12 gap-6 custom-scrollbar">
+        <!-- Left 5 Cols: Frame Snapshot Preview -->
+        <div class="md:col-span-5 flex flex-col gap-2.5">
+          <span class="font-data-mono text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">camera_alt</span>
+            SECTOR OPTICAL SNAPSHOT
+          </span>
+          <div class="relative aspect-video bg-black rounded border border-emerald-500/30 overflow-hidden flex items-center justify-center">
+            <img id="interrogate-preview-img" src="" alt="Sector Frame" class="w-full h-full object-cover" />
+            <div class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/80 font-data-mono text-[9px] text-emerald-300 border border-emerald-400/40">FROZEN FRAME</div>
+          </div>
+          <button id="interrogate-refresh-frame-btn" class="py-1.5 px-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 rounded font-data-mono text-[11px] flex items-center justify-center gap-1.5 transition-all">
+            <span class="material-symbols-outlined text-xs">refresh</span>
+            <span>CAPTURE LATEST LIVE FRAME</span>
+          </button>
+        </div>
+
+        <!-- Right 7 Cols: Prompt & AI Intelligence Stream -->
+        <div class="md:col-span-7 flex flex-col gap-3 font-data-mono">
+          <!-- Quick Preset Queries -->
+          <div class="space-y-1.5">
+            <span class="text-[10px] text-gray-400 font-bold">TACTICAL PRESET QUERIES:</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button class="interrogate-preset-btn px-2 py-1 bg-black/40 text-gray-300 hover:text-emerald-300 border border-emerald-500/30 rounded text-[10px]" data-prompt="Assess threat level and identify any suspicious or hostile behavior in this sector.">🚨 Threat Assessment</button>
+              <button class="interrogate-preset-btn px-2 py-1 bg-black/40 text-gray-300 hover:text-emerald-300 border border-emerald-500/30 rounded text-[10px]" data-prompt="Check all persons for held objects, backpacks, bags, or potential concealed weapons.">🎒 Concealed Gear / Bags</button>
+              <button class="interrogate-preset-btn px-2 py-1 bg-black/40 text-gray-300 hover:text-emerald-300 border border-emerald-500/30 rounded text-[10px]" data-prompt="Count all persons, describe their attire and relative positions in the frame.">👥 Headcount & Attire</button>
+              <button class="interrogate-preset-btn px-2 py-1 bg-black/40 text-gray-300 hover:text-emerald-300 border border-emerald-500/30 rounded text-[10px]" data-prompt="Are there any security violations, restricted perimeter breaches, or masked individuals?">🛡️ Perimeter Breach Check</button>
+            </div>
+          </div>
+
+          <!-- Custom Query Input -->
+          <div class="space-y-1">
+            <label class="text-[10px] text-gray-400 font-bold">TACTICAL INTERROGATION PROMPT:</label>
+            <div class="flex gap-2">
+              <input type="text" id="interrogate-prompt-input" value="Assess threat level and identify any suspicious or hostile behavior in this sector." class="flex-1 bg-[#0a1421] border border-emerald-500/40 rounded px-3 py-1.5 text-emerald-300 text-xs focus:outline-none focus:border-emerald-400" />
+              <button id="interrogate-execute-btn" class="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded flex items-center gap-1 text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">
+                <span class="material-symbols-outlined text-sm">send</span>
+                <span id="interrogate-execute-text">ANALYZE</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Response Container -->
+          <div class="space-y-1 flex-1 flex flex-col min-h-[140px]">
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] text-emerald-400 font-bold">NVIDIA TACTICAL ANALYSIS:</span>
+              <span id="interrogate-status-badge" class="text-[9px] text-gray-400 font-data-mono">READY</span>
+            </div>
+            <div id="interrogate-response-box" class="flex-1 bg-black/60 border border-emerald-500/30 rounded p-3 text-xs font-sans text-gray-200 leading-relaxed overflow-y-auto max-h-56 custom-scrollbar whitespace-pre-line">
+              Select a tactical query preset above or type your prompt and click "ANALYZE" to interrogate the live camera feed with NVIDIA NIM.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

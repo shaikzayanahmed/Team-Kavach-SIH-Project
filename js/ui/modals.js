@@ -1,13 +1,17 @@
 // UI Modal Views & Dialog Manager
 export class ModalController {
-  constructor(dbService, audioService, visionEngine, onWhitelistUpdated, onUnknownUpdated) {
+  constructor(dbService, audioService, visionEngine, nvidiaService, onWhitelistUpdated, onUnknownUpdated, onNvidiaStatusChanged) {
     this.db = dbService;
     this.audio = audioService;
     this.vision = visionEngine;
+    this.nvidia = nvidiaService;
     this.onWhitelistUpdated = onWhitelistUpdated;
     this.onUnknownUpdated = onUnknownUpdated;
+    this.onNvidiaStatusChanged = onNvidiaStatusChanged;
     this.activeInspectorId = null;
+    this.currentInterrogateFrame = null;
     this.bindEvents();
+    this.updateNvidiaUI();
   }
 
   bindEvents() {
@@ -28,7 +32,33 @@ export class ModalController {
     document.getElementById('close-unknown-btn')?.addEventListener('click', () => this.close('unknown-modal'));
     document.getElementById('close-inspector-btn')?.addEventListener('click', () => this.close('dossier-inspector-modal'));
 
+    // NVIDIA NIM buttons
+    document.getElementById('nav-nvidia-btn')?.addEventListener('click', () => this.openNvidiaModal());
+    document.getElementById('side-nvidia-btn')?.addEventListener('click', () => this.openNvidiaModal());
+    document.getElementById('close-nvidia-btn')?.addEventListener('click', () => this.close('nvidia-modal'));
+    document.getElementById('nvidia-save-btn')?.addEventListener('click', () => this.saveNvidiaConfig());
+    document.getElementById('nvidia-clear-btn')?.addEventListener('click', () => this.clearNvidiaConfig());
+    document.getElementById('nvidia-test-btn')?.addEventListener('click', () => this.testNvidiaConnection());
+    document.getElementById('nvidia-toggle-key-visibility')?.addEventListener('click', () => this.toggleKeyVisibility());
+
+    // Live Interrogation buttons
+    document.getElementById('interrogate-scene-btn')?.addEventListener('click', () => this.openInterrogateModal());
+    document.getElementById('close-interrogate-btn')?.addEventListener('click', () => this.close('scene-interrogate-modal'));
+    document.getElementById('interrogate-refresh-frame-btn')?.addEventListener('click', () => this.captureLiveInterrogateFrame());
+    document.getElementById('interrogate-execute-btn')?.addEventListener('click', () => this.executeSceneInterrogation());
+
+    document.querySelectorAll('.interrogate-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const promptInput = document.getElementById('interrogate-prompt-input');
+        if (promptInput) {
+          promptInput.value = e.target.dataset.prompt;
+          this.executeSceneInterrogation();
+        }
+      });
+    });
+
     // Whitelist Form
+    document.getElementById('capture-enroll-btn')?.addEventListener('click', () => this.captureFacePreview());
     document.getElementById('save-enroll-btn')?.addEventListener('click', () => this.registerWhitelistUser());
     document.getElementById('clear-whitelist-btn')?.addEventListener('click', () => {
       this.db.whitelist = [{ id: 'WL-001', name: 'Commander / Operator (Me)', role: 'Chief Security Director - Cleared', enrolledAt: new Date().toLocaleDateString(), photo: this.db.createAvatarDataUrl('#00ff9d', 'CMD') }];
@@ -63,6 +93,7 @@ export class ModalController {
     document.getElementById('inspector-whitelist-btn')?.addEventListener('click', () => {
       if (this.activeInspectorId) this.whitelistUnknown(this.activeInspectorId);
     });
+    document.getElementById('inspector-nvidia-btn')?.addEventListener('click', () => this.runInspectorNvidiaScan());
 
     // Criminal search & filters
     document.getElementById('criminal-search-input')?.addEventListener('input', (e) => this.renderCriminals('ALL', e.target.value));
@@ -94,58 +125,257 @@ export class ModalController {
     this.renderUnknowns();
   }
 
+  openNvidiaModal() {
+    const input = document.getElementById('nvidia-api-key-input');
+    const select = document.getElementById('nvidia-model-select');
+    if (input) input.value = this.nvidia.apiKey || '';
+    if (select) select.value = this.nvidia.model || 'meta/llama-3.2-11b-vision-instruct';
+    
+    const resultBox = document.getElementById('nvidia-test-result-box');
+    if (resultBox) resultBox.classList.add('hidden');
+    
+    this.open('nvidia-modal');
+  }
+
+  updateNvidiaUI() {
+    const isReady = this.nvidia.isConfigured();
+    const pill = document.getElementById('nvidia-status-pill');
+    const sideStatus = document.getElementById('side-nvidia-status');
+    
+    if (pill) {
+      pill.innerText = isReady ? 'ONLINE' : 'CONFIG';
+      pill.className = isReady ? 'text-[10px] text-emerald-300 font-bold' : 'text-[10px] text-amber-400';
+    }
+    if (sideStatus) {
+      sideStatus.innerText = isReady ? 'NIM ACTIVE' : 'NO KEY';
+      sideStatus.className = isReady 
+        ? 'font-data-mono text-[10px] bg-emerald-900/50 px-1.5 py-0.5 rounded text-emerald-300 border border-emerald-500/40' 
+        : 'font-data-mono text-[10px] bg-amber-900/50 px-1.5 py-0.5 rounded text-amber-300 border border-amber-500/40';
+    }
+  }
+
+  toggleKeyVisibility() {
+    const input = document.getElementById('nvidia-api-key-input');
+    if (input) {
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  }
+
+  saveNvidiaConfig() {
+    const input = document.getElementById('nvidia-api-key-input');
+    const select = document.getElementById('nvidia-model-select');
+    if (input) this.nvidia.setApiKey(input.value);
+    if (select) this.nvidia.setModel(select.value);
+
+    this.updateNvidiaUI();
+    this.audio.play('friendly');
+    
+    const resultBox = document.getElementById('nvidia-test-result-box');
+    const resultText = document.getElementById('nvidia-test-result-text');
+    if (resultBox && resultText) {
+      resultBox.classList.remove('hidden');
+      resultBox.className = 'p-3 rounded bg-emerald-950/60 border border-emerald-500/50 text-xs';
+      resultText.innerText = '✅ NVIDIA NIM Configuration saved successfully to local browser storage.';
+    }
+
+    if (this.onNvidiaStatusChanged) this.onNvidiaStatusChanged();
+    setTimeout(() => this.close('nvidia-modal'), 1200);
+  }
+
+  clearNvidiaConfig() {
+    if (confirm('Purge saved NVIDIA API Key from this browser?')) {
+      this.nvidia.clearApiKey();
+      const input = document.getElementById('nvidia-api-key-input');
+      if (input) input.value = '';
+      this.updateNvidiaUI();
+      const resultBox = document.getElementById('nvidia-test-result-box');
+      if (resultBox) resultBox.classList.add('hidden');
+      if (this.onNvidiaStatusChanged) this.onNvidiaStatusChanged();
+    }
+  }
+
+  async testNvidiaConnection() {
+    const input = document.getElementById('nvidia-api-key-input');
+    const key = input ? input.value : this.nvidia.apiKey;
+    const resultBox = document.getElementById('nvidia-test-result-box');
+    const resultText = document.getElementById('nvidia-test-result-text');
+    const testBtn = document.getElementById('nvidia-test-btn');
+
+    if (!key) {
+      alert('Please enter an NVIDIA NIM API key first.');
+      return;
+    }
+
+    if (testBtn) testBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> <span>TESTING...</span>';
+    if (resultBox) {
+      resultBox.classList.remove('hidden');
+      resultBox.className = 'p-3 rounded bg-black/60 border border-cyan-500/40 text-xs';
+      resultText.innerText = 'Connecting to NVIDIA NIM Gateway (https://integrate.api.nvidia.com)...';
+    }
+
+    try {
+      const response = await this.nvidia.testConnection(key);
+      if (resultBox && resultText) {
+        resultBox.className = 'p-3 rounded bg-emerald-950/60 border border-emerald-500/50 text-xs';
+        resultText.innerText = `✅ NVIDIA NIM CONNECTION ACTIVE: "${response.trim()}"`;
+      }
+      this.audio.play('friendly');
+    } catch (err) {
+      if (resultBox && resultText) {
+        resultBox.className = 'p-3 rounded bg-red-950/60 border border-red-500/50 text-xs';
+        resultText.innerText = `❌ Connection Failed: ${err.message}`;
+      }
+      this.audio.play('alert');
+    } finally {
+      if (testBtn) testBtn.innerHTML = '<span class="material-symbols-outlined text-sm">wifi_tethering</span> <span>TEST CONNECTION</span>';
+    }
+  }
+
+  openInterrogateModal() {
+    this.open('scene-interrogate-modal');
+    this.captureLiveInterrogateFrame();
+  }
+
+  captureLiveInterrogateFrame() {
+    const video = document.getElementById('webcam-video');
+    const imgEl = document.getElementById('interrogate-preview-img');
+    if (!video || video.readyState !== 4) return;
+
+    try {
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth || 1280;
+      c.height = video.videoHeight || 720;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(video, 0, 0, c.width, c.height);
+      this.currentInterrogateFrame = c.toDataURL('image/jpeg', 0.85);
+      if (imgEl) imgEl.src = this.currentInterrogateFrame;
+    } catch (e) {
+      console.warn('Frame capture error:', e);
+    }
+  }
+
+  async executeSceneInterrogation() {
+    if (!this.currentInterrogateFrame) {
+      this.captureLiveInterrogateFrame();
+    }
+    if (!this.currentInterrogateFrame) {
+      alert('No camera stream available to interrogate.');
+      return;
+    }
+
+    if (!this.nvidia.isConfigured()) {
+      this.openNvidiaModal();
+      return;
+    }
+
+    const promptInput = document.getElementById('interrogate-prompt-input');
+    const promptText = promptInput ? promptInput.value.trim() : 'Assess tactical threat level and summarize activity in this sector.';
+    const responseBox = document.getElementById('interrogate-response-box');
+    const statusBadge = document.getElementById('interrogate-status-badge');
+    const executeBtn = document.getElementById('interrogate-execute-btn');
+    const executeText = document.getElementById('interrogate-execute-text');
+
+    if (executeText) executeText.innerText = 'PROCESSING...';
+    if (executeBtn) executeBtn.disabled = true;
+    if (statusBadge) {
+      statusBadge.innerText = 'NVIDIA REASONING...';
+      statusBadge.className = 'text-[9px] text-emerald-300 font-data-mono animate-pulse';
+    }
+    if (responseBox) {
+      responseBox.innerText = '📡 Streaming multimodal inference from NVIDIA Foundation Model...';
+      responseBox.classList.add('ai-scan-running');
+    }
+
+    try {
+      const reply = await this.nvidia.interrogateScene(this.currentInterrogateFrame, promptText);
+      if (responseBox) {
+        responseBox.innerText = reply;
+        responseBox.classList.remove('ai-scan-running');
+      }
+      if (statusBadge) {
+        statusBadge.innerText = 'COMPLETE';
+        statusBadge.className = 'text-[9px] text-emerald-400 font-data-mono font-bold';
+      }
+      this.audio.play('friendly');
+    } catch (err) {
+      if (responseBox) {
+        responseBox.innerText = `⚠️ NVIDIA NIM Request Error: ${err.message}`;
+        responseBox.classList.remove('ai-scan-running');
+      }
+      if (statusBadge) {
+        statusBadge.innerText = 'ERROR';
+        statusBadge.className = 'text-[9px] text-red-400 font-data-mono font-bold';
+      }
+      this.audio.play('alert');
+    } finally {
+      if (executeText) executeText.innerText = 'ANALYZE';
+      if (executeBtn) executeBtn.disabled = false;
+    }
+  }
+
   captureFacePreview() {
     const video = document.getElementById('webcam-video');
     const canvas = document.getElementById('enroll-preview-canvas');
     if (!canvas || !video || video.readyState !== 4) return;
-    canvas.width = 320; canvas.height = 240;
+
+    canvas.width = 320;
+    canvas.height = 240;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, 320, 240);
-    ctx.strokeStyle = '#00ff9d'; ctx.lineWidth = 2;
-    ctx.strokeRect(80, 40, 160, 160);
-    document.getElementById('enroll-empty-hint')?.classList.add('hidden');
-    this.stagedPhoto = canvas.toDataURL('image/jpeg', 0.85);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const hint = document.getElementById('enroll-empty-hint');
+    if (hint) hint.style.display = 'none';
   }
 
   registerWhitelistUser() {
-    const name = document.getElementById('enroll-name-input')?.value.trim() || 'Authorized Personnel';
-    const role = document.getElementById('enroll-role-input')?.value.trim() || 'Security Cleared';
-    if (!this.stagedPhoto) this.captureFacePreview();
+    const nameInput = document.getElementById('enroll-name-input');
+    const roleInput = document.getElementById('enroll-role-input');
+    const canvas = document.getElementById('enroll-preview-canvas');
+
+    const name = nameInput ? nameInput.value.trim() : 'Operator';
+    const role = roleInput ? roleInput.value.trim() : 'Security Personnel';
+    let photo = '';
+
+    if (canvas && canvas.width > 0) {
+      photo = canvas.toDataURL('image/jpeg', 0.85);
+    } else {
+      photo = this.db.createAvatarDataUrl('#00ff9d', name.substring(0, 3).toUpperCase());
+    }
 
     this.db.whitelist.unshift({
-      id: `WL-00${this.db.whitelist.length + 1}`,
+      id: `WL-${Math.floor(100 + Math.random() * 900)}`,
       name,
       role,
       enrolledAt: new Date().toLocaleDateString(),
-      photo: this.stagedPhoto || this.db.createAvatarDataUrl('#00ff9d', 'OK')
+      photo
     });
+
     this.db.saveWhitelist();
     this.renderWhitelist();
-    this.close('whitelist-modal');
     this.audio.play('friendly');
     if (this.onWhitelistUpdated) this.onWhitelistUpdated();
   }
 
   renderWhitelist() {
     const container = document.getElementById('whitelist-cards-container');
+    const countEl = document.getElementById('modal-whitelist-count');
+    if (countEl) countEl.innerText = this.db.whitelist.length;
     if (!container) return;
+
     container.innerHTML = this.db.whitelist.map((p, idx) => `
-      <div class="bg-[#17202e]/80 border border-green-500/30 rounded p-3 flex items-center justify-between gap-3">
+      <div class="bg-[#17202e] border border-green-500/30 rounded-lg p-3 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <img src="${p.photo}" class="w-12 h-12 rounded border border-green-400/50 object-cover bg-black" />
-          <div class="font-data-mono">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-green-300">${p.name}</span>
-              <span class="text-[9px] bg-green-950 text-green-400 px-1.5 py-0.5 rounded border border-green-500/40">AUTHORIZED</span>
-            </div>
-            <span class="text-[11px] text-gray-400 font-sans">${p.role}</span>
+          <img src="${p.photo}" class="w-10 h-10 rounded-full border border-green-400/50 object-cover bg-black" />
+          <div>
+            <h4 class="font-headline-md text-xs font-bold text-green-300">${p.name}</h4>
+            <p class="font-data-mono text-[10px] text-gray-300">${p.role}</p>
+            <span class="font-data-mono text-[9px] text-gray-500">Enrolled: ${p.enrolledAt}</span>
           </div>
         </div>
-        <button data-idx="${idx}" class="remove-wl-btn px-2 py-1 text-[10px] font-data-mono text-red-400 hover:text-red-300 border border-red-500/30 rounded">REVOKE</button>
+        ${idx > 0 ? `<button data-idx="${idx}" class="del-wl-btn p-1 text-gray-400 hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-sm pointer-events-none">delete</span></button>` : '<span class="font-data-mono text-[9px] text-green-400/80 px-2 py-0.5 rounded bg-green-950 border border-green-500/30">DEFAULT</span>'}
       </div>
     `).join('');
 
-    container.querySelectorAll('.remove-wl-btn').forEach(btn => {
+    container.querySelectorAll('.del-wl-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         this.db.whitelist.splice(parseInt(e.target.dataset.idx, 10), 1);
         this.db.saveWhitelist();
@@ -210,6 +440,32 @@ export class ModalController {
     document.getElementById('inspector-total-time').innerText = d.durationFormatted || '0m 00s';
     document.getElementById('inspector-summary-text').innerText = d.summaryReport || 'No report available';
 
+    // NVIDIA AI Section state
+    const modelTag = document.getElementById('inspector-nvidia-model-tag');
+    if (modelTag) {
+      modelTag.innerText = this.nvidia.model.split('/')[1]?.toUpperCase() || 'NVIDIA NIM';
+    }
+
+    const placeholder = document.getElementById('inspector-nvidia-placeholder');
+    const resultBox = document.getElementById('inspector-nvidia-result');
+    const btnText = document.getElementById('inspector-nvidia-btn-text');
+
+    if (d.nvidiaAnalysis) {
+      if (placeholder) placeholder.classList.add('hidden');
+      if (resultBox) {
+        resultBox.classList.remove('hidden');
+        resultBox.innerText = d.nvidiaAnalysis;
+      }
+      if (btnText) btnText.innerText = 'RE-SCAN WITH NVIDIA AI';
+    } else {
+      if (placeholder) placeholder.classList.remove('hidden');
+      if (resultBox) {
+        resultBox.classList.add('hidden');
+        resultBox.innerText = '';
+      }
+      if (btnText) btnText.innerText = 'SCAN WITH NVIDIA AI';
+    }
+
     const timelineEl = document.getElementById('inspector-timeline-container');
     if (timelineEl) {
       timelineEl.innerHTML = (d.activityTimeline || []).map(s => `
@@ -219,6 +475,61 @@ export class ModalController {
           <p class="text-gray-300 text-xs">${s.event}</p>
         </div>
       `).join('');
+    }
+  }
+
+  async runInspectorNvidiaScan() {
+    if (!this.activeInspectorId) return;
+    const d = this.db.unknowns.find(u => u.id === this.activeInspectorId);
+    if (!d) return;
+
+    if (!this.nvidia.isConfigured()) {
+      this.openNvidiaModal();
+      return;
+    }
+
+    const placeholder = document.getElementById('inspector-nvidia-placeholder');
+    const resultBox = document.getElementById('inspector-nvidia-result');
+    const btnText = document.getElementById('inspector-nvidia-btn-text');
+    const btn = document.getElementById('inspector-nvidia-btn');
+
+    if (placeholder) placeholder.classList.add('hidden');
+    if (resultBox) {
+      resultBox.classList.remove('hidden');
+      resultBox.innerText = '📡 Transmitting target surveillance crop to NVIDIA NIM Vision Foundation Model...';
+      resultBox.classList.add('ai-scan-running');
+    }
+    if (btnText) btnText.innerText = 'ANALYZING...';
+    if (btn) btn.disabled = true;
+
+    try {
+      const context = {
+        subjectId: d.id,
+        biometrics: d.biometrics,
+        attire: d.attire,
+        carriedItems: d.carriedItems,
+        duration: d.durationFormatted
+      };
+
+      const analysis = await this.nvidia.analyzeSubject(d.photo, context);
+      d.nvidiaAnalysis = analysis;
+      this.db.saveUnknowns();
+
+      if (resultBox) {
+        resultBox.innerText = analysis;
+        resultBox.classList.remove('ai-scan-running');
+      }
+      if (btnText) btnText.innerText = 'RE-SCAN WITH NVIDIA AI';
+      this.audio.play('friendly');
+    } catch (err) {
+      if (resultBox) {
+        resultBox.innerText = `⚠️ NVIDIA NIM Analysis Failed: ${err.message}`;
+        resultBox.classList.remove('ai-scan-running');
+      }
+      if (btnText) btnText.innerText = 'RETRY SCAN';
+      this.audio.play('alert');
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
 

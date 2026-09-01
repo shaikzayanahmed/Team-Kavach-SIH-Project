@@ -198,10 +198,50 @@ body {
   box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
 }
 
+/* NVIDIA NIM AI Styling & Badges */
+.nvidia-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 78, 59, 0.3));
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.nvidia-glow {
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.25), inset 0 1px 0 0 rgba(16, 185, 129, 0.3);
+}
+
+.ai-scan-running {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-scan-running::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent,
+    rgba(16, 185, 129, 0.15),
+    transparent
+  );
+  transform: rotate(30deg);
+  animation: ai-scan-sweep 1.5s infinite linear;
+}
+
+@keyframes ai-scan-sweep {
+  0% { transform: translateY(-100%) rotate(30deg); }
+  100% { transform: translateY(100%) rotate(30deg); }
+}
+
 /* Modal Open Animation */
 #whitelist-modal:not(.hidden),
 #criminal-modal:not(.hidden),
 #unknown-modal:not(.hidden),
+#nvidia-modal:not(.hidden),
+#scene-interrogate-modal:not(.hidden),
 #dossier-inspector-modal:not(.hidden) {
   display: flex !important;
   animation: modal-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
