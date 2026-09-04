@@ -7,6 +7,57 @@ import { TrackerEngine } from './engine/tracker.js';
 import { HUDEngine } from './engine/hud.js';
 import { ModalController } from './ui/modals.js';
 
+export const TACTICAL_THEMES = {
+  cyan: {
+    id: 'cyan',
+    name: 'CYAN MATRIX',
+    primary: '#00daf3',
+    container: '#00e5ff',
+    rgb: [0.0, 0.898, 1.0],
+    accentClass: 'text-cyan-300'
+  },
+  emerald: {
+    id: 'emerald',
+    name: 'EMERALD OPS',
+    primary: '#00ff9d',
+    container: '#10b981',
+    rgb: [0.0, 1.0, 0.615],
+    accentClass: 'text-green-300'
+  },
+  amber: {
+    id: 'amber',
+    name: 'AMBER FLIR',
+    primary: '#ffba4b',
+    container: '#ff9500',
+    rgb: [1.0, 0.729, 0.294],
+    accentClass: 'text-amber-300'
+  },
+  crimson: {
+    id: 'crimson',
+    name: 'CRIMSON RED',
+    primary: '#ff453a',
+    container: '#ff2a2a',
+    rgb: [1.0, 0.27, 0.227],
+    accentClass: 'text-red-300'
+  },
+  violet: {
+    id: 'violet',
+    name: 'VIOLET SYNTH',
+    primary: '#c084fc',
+    container: '#a855f7',
+    rgb: [0.75, 0.517, 0.988],
+    accentClass: 'text-purple-300'
+  },
+  gold: {
+    id: 'gold',
+    name: 'SOLAR GOLD',
+    primary: '#facc15',
+    container: '#eab308',
+    rgb: [0.98, 0.8, 0.082],
+    accentClass: 'text-yellow-300'
+  }
+};
+
 class SentinelApp {
   constructor() {
     this.video = document.getElementById('webcam-video');
@@ -39,14 +90,26 @@ class SentinelApp {
     this.frameCount = 0;
     this.fps = 0;
 
+    // Optical Camera Feeds State
+    this.cameraFeeds = [
+      { id: 'feed-1', name: 'FEED 1: POST 1 (MAIN)', type: 'hardware', deviceId: null, status: 'LIVE', resolution: '1080P/60FPS', label: 'Primary Optics' },
+      { id: 'feed-2', name: 'FEED 2: POST 4 (ALPHA)', type: 'preset', status: 'STANDBY', resolution: '1080P/60FPS', label: 'Alpha Sector' },
+      { id: 'feed-3', name: 'FEED 3: POST 7 (BETA)', type: 'preset', status: 'MOTION', resolution: '720P/30FPS', label: 'Beta Sector' },
+      { id: 'feed-4', name: 'FEED 4: DRONE 9 (UAV)', type: 'preset', status: 'UAV-LOCK', resolution: '4K/60FPS', label: 'Aerial Recon' }
+    ];
+    this.activeFeedIndex = 0;
+    this.currentTheme = localStorage.getItem('sentinel_ui_theme') || 'cyan';
+
     this.init();
   }
 
   async init() {
     this.startClock();
+    this.initTheme();
     this.bindUI();
     this.updateBadges();
     await this.initCamera();
+    await this.enumerateCameras();
     await this.loadAI();
   }
 
@@ -57,10 +120,202 @@ class SentinelApp {
     }, 1000);
   }
 
-  async initCamera() {
-    const statusText = document.getElementById('camera-status-text');
+  initTheme() {
+    this.setTheme(this.currentTheme, false);
+  }
+
+  setTheme(themeId, notify = true) {
+    const theme = TACTICAL_THEMES[themeId] || TACTICAL_THEMES.cyan;
+    this.currentTheme = theme.id;
+    localStorage.setItem('sentinel_ui_theme', theme.id);
+
+    // Update body theme classes
+    document.body.classList.remove('theme-cyan', 'theme-emerald', 'theme-amber', 'theme-crimson', 'theme-violet', 'theme-gold');
+    document.body.classList.add(`theme-${theme.id}`);
+
+    // Update HUD Engine theme color
+    this.hud.setThemeColor(theme.primary);
+
+    // Update WebGL Grid Shader Uniform
+    if (window.setShaderThemeColor) {
+      window.setShaderThemeColor(...theme.rgb);
+    }
+
+    // Update UI Badges & Buttons active state
+    const themeNameLabel = document.getElementById('active-theme-name');
+    if (themeNameLabel) themeNameLabel.innerText = theme.name;
+
+    document.querySelectorAll('.theme-select-btn, .settings-theme-btn').forEach(btn => {
+      const isSelected = btn.dataset.theme === theme.id;
+      if (isSelected) {
+        btn.classList.add('ring-2', 'ring-white/80', 'bg-white/10');
+      } else {
+        btn.classList.remove('ring-2', 'ring-white/80', 'bg-white/10');
+      }
+    });
+
+    if (notify) {
+      this.modals.showToast('UI Color Theme', `Tactical Color Palette switched to ${theme.name}`, 'info');
+      this.audio.play('click');
+      this.addAlert(`Tactical UI theme switched to ${theme.name}`, 'INFO', 'SYSTEM', 100);
+    }
+  }
+
+  async enumerateCameras() {
     try {
-      if (statusText) statusText.innerText = 'CONNECTING...';
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(d => d.kind === 'videoinput');
+
+      if (videoInputs.length > 0) {
+        const hardwareFeeds = videoInputs.map((d, idx) => ({
+          id: `cam-hw-${idx}`,
+          name: `FEED ${idx + 1}: ${d.label || `CAM 0${idx + 1} (HARDWARE)`}`,
+          type: 'hardware',
+          deviceId: d.deviceId,
+          status: idx === this.activeFeedIndex ? 'LIVE' : 'READY',
+          resolution: '1080P/60FPS',
+          label: d.label || `Hardware Cam ${idx + 1}`
+        }));
+
+        // Keep auxiliary tactical feeds if fewer than 4 hardware cameras
+        const auxPresets = [
+          { id: 'cam-aux-post4', name: `FEED ${hardwareFeeds.length + 1}: POST 4 (ALPHA)`, type: 'preset', status: 'STANDBY', resolution: '1080P/60FPS', label: 'Post 4 Alpha' },
+          { id: 'cam-aux-post7', name: `FEED ${hardwareFeeds.length + 2}: POST 7 (BETA)`, type: 'preset', status: 'MOTION', resolution: '720P/30FPS', label: 'Post 7 Beta' },
+          { id: 'cam-aux-drone', name: `FEED ${hardwareFeeds.length + 3}: DRONE 9 (UAV)`, type: 'preset', status: 'UAV-LOCK', resolution: '4K/60FPS', label: 'Drone Sector 9' }
+        ];
+
+        this.cameraFeeds = [...hardwareFeeds, ...auxPresets.slice(0, Math.max(1, 4 - hardwareFeeds.length))];
+      }
+
+      this.renderCameraFeedsUI();
+    } catch (err) {
+      console.warn('Camera enumeration error:', err);
+    }
+  }
+
+  renderCameraFeedsUI() {
+    const listContainer = document.getElementById('cam-feed-list');
+    const pillsContainer = document.getElementById('viewport-feed-pills-container');
+    const selectEl = document.getElementById('settings-camera-select');
+    const countTag = document.getElementById('cam-count-tag');
+
+    if (countTag) countTag.innerText = `${this.cameraFeeds.length} FEEDS`;
+
+    // 1. Populate Dropdown Menu
+    if (listContainer) {
+      listContainer.innerHTML = '';
+      this.cameraFeeds.forEach((feed, idx) => {
+        const isActive = idx === this.activeFeedIndex;
+        const item = document.createElement('button');
+        item.className = `w-full p-2 rounded-lg text-left transition-all flex items-center justify-between border ${
+          isActive ? 'bg-primary-container/20 border-primary/50 text-primary-fixed' : 'bg-black/40 hover:bg-white/5 border-white/5 text-gray-300'
+        }`;
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}"></span>
+            <div>
+              <span class="font-bold block text-[11px] truncate max-w-[150px]">${feed.name}</span>
+              <span class="text-[9px] text-gray-400">${feed.resolution} • ${feed.type.toUpperCase()}</span>
+            </div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded ${isActive ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold' : 'bg-black/60 text-gray-400'}">${feed.status}</span>
+        `;
+        item.addEventListener('click', () => {
+          this.switchCamera(idx);
+          document.getElementById('cam-selector-dropdown')?.classList.add('hidden');
+        });
+        listContainer.appendChild(item);
+      });
+    }
+
+    // 2. Populate Viewport Top Quick Switcher Pills
+    if (pillsContainer) {
+      pillsContainer.innerHTML = '';
+      this.cameraFeeds.slice(0, 4).forEach((feed, idx) => {
+        const isActive = idx === this.activeFeedIndex;
+        const pill = document.createElement('button');
+        pill.className = `px-2.5 py-1 rounded-full font-data-mono text-[10px] transition-all flex items-center gap-1.5 ${
+          isActive
+            ? 'bg-primary-container/30 text-primary-fixed border border-primary/60 font-bold shadow-md scale-105'
+            : 'bg-black/40 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
+        }`;
+        pill.innerHTML = `
+          <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-ping' : 'bg-gray-500'}"></span>
+          <span>FEED ${idx + 1}</span>
+        `;
+        pill.addEventListener('click', () => this.switchCamera(idx));
+        pillsContainer.appendChild(pill);
+      });
+    }
+
+    // 3. Populate Settings Modal Select
+    if (selectEl) {
+      selectEl.innerHTML = '';
+      this.cameraFeeds.forEach((feed, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = `${feed.name} (${feed.resolution})`;
+        opt.selected = idx === this.activeFeedIndex;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    // 4. Update Header Label
+    const activeFeed = this.cameraFeeds[this.activeFeedIndex];
+    const headerLabel = document.getElementById('active-feed-label');
+    if (headerLabel && activeFeed) {
+      headerLabel.innerText = activeFeed.name.split(':')[0] || 'CAM 1';
+    }
+
+    // 5. Update Bottom Auxiliary Tiles Active Border
+    [1, 2, 3].forEach(n => {
+      const tile = document.getElementById(`aux-feed-${n}`);
+      if (tile) {
+        if (this.activeFeedIndex === n) {
+          tile.classList.add('ring-2', 'ring-primary-container', 'border-primary-container');
+        } else {
+          tile.classList.remove('ring-2', 'ring-primary-container', 'border-primary-container');
+        }
+      }
+    });
+  }
+
+  async switchCamera(feedIndex, deviceId = null) {
+    if (feedIndex < 0 || feedIndex >= this.cameraFeeds.length) return;
+    this.activeFeedIndex = feedIndex;
+    const feed = this.cameraFeeds[feedIndex];
+    const targetDeviceId = deviceId || feed.deviceId;
+
+    this.renderCameraFeedsUI();
+    this.audio.play('ping');
+
+    try {
+      if (this.video.srcObject) {
+        const tracks = this.video.srcObject.getTracks();
+        tracks.forEach(t => t.stop());
+      }
+
+      const constraints = {
+        video: targetDeviceId ? { deviceId: { exact: targetDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        audio: false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.video.srcObject = stream;
+      await new Promise(res => { this.video.onloadedmetadata = () => { this.video.play(); res(); }; });
+
+      this.resizeCanvas();
+      this.modals.showToast('Optics Re-Routed', `Switched active surveillance feed to ${feed.name}`, 'success');
+      this.addAlert(`Optical input switched to ${feed.name} (${feed.resolution})`, 'INFO', 'OPTICS', 100);
+    } catch (err) {
+      this.modals.showToast('Feed Switch Active', `Viewing sector: ${feed.name}`, 'info');
+      this.addAlert(`Surveillance optics active on sector: ${feed.name}`, 'INFO', 'OPTICS', 95);
+    }
+  }
+
+  async initCamera() {
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
         audio: false
@@ -70,11 +325,9 @@ class SentinelApp {
 
       this.resizeCanvas();
       window.addEventListener('resize', () => this.resizeCanvas());
-      if (statusText) statusText.innerText = 'POST 1 - MAIN OPTICS';
       this.addAlert('Optical video stream synchronized successfully (Post 1)', 'INFO', 'OPTICS', 100);
       this.audio.play('ping');
     } catch (err) {
-      if (statusText) statusText.innerText = 'NO CAMERA (SIM MODE)';
       this.addAlert('Camera access denied or unavailable. Operating in synthetic simulation mode.', 'WARNING', 'HARDWARE', 0);
     }
   }
@@ -277,6 +530,81 @@ class SentinelApp {
   }
 
   bindUI() {
+    // Camera Selector Dropdown Toggle
+    const camBtn = document.getElementById('cam-selector-btn');
+    const camDropdown = document.getElementById('cam-selector-dropdown');
+    camBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      camDropdown?.classList.toggle('hidden');
+      themeDropdown?.classList.add('hidden');
+      this.audio.play('click');
+    });
+
+    // Theme Palette Dropdown Toggle
+    const themeBtn = document.getElementById('theme-palette-btn');
+    const themeDropdown = document.getElementById('theme-palette-dropdown');
+    themeBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      themeDropdown?.classList.toggle('hidden');
+      camDropdown?.classList.add('hidden');
+      this.audio.play('click');
+    });
+
+    // Close Dropdowns on Click Outside
+    document.addEventListener('click', (e) => {
+      if (camDropdown && !camDropdown.contains(e.target) && e.target !== camBtn && !camBtn?.contains(e.target)) {
+        camDropdown.classList.add('hidden');
+      }
+      if (themeDropdown && !themeDropdown.contains(e.target) && e.target !== themeBtn && !themeBtn?.contains(e.target)) {
+        themeDropdown.classList.add('hidden');
+      }
+    });
+
+    // Header Theme Select Buttons
+    document.querySelectorAll('.theme-select-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const themeId = e.currentTarget.dataset.theme;
+        this.setTheme(themeId, true);
+        themeDropdown?.classList.add('hidden');
+      });
+    });
+
+    // Settings Modal Theme Select Buttons
+    document.querySelectorAll('.settings-theme-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const themeId = e.currentTarget.dataset.theme;
+        this.setTheme(themeId, true);
+      });
+    });
+
+    // Settings Modal Camera Select Dropdown
+    document.getElementById('settings-camera-select')?.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.value, 10);
+      this.switchCamera(idx);
+    });
+
+    // Refresh Camera Hardware Devices Button
+    document.getElementById('refresh-cams-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.enumerateCameras();
+      this.modals.showToast('Hardware Scan', 'Re-scanned available optical video inputs', 'info');
+      this.audio.play('click');
+    });
+
+    // Bottom Auxiliary Camera Feeds Direct Switch
+    document.getElementById('aux-feed-1')?.addEventListener('click', () => this.switchCamera(1));
+    document.getElementById('aux-feed-2')?.addEventListener('click', () => this.switchCamera(2));
+    document.getElementById('aux-feed-3')?.addEventListener('click', () => this.switchCamera(3));
+
+    // Sensitivity Slider
+    const sensSlider = document.getElementById('sensitivity-slider');
+    const sensDisplay = document.getElementById('sensitivity-display');
+    sensSlider?.addEventListener('input', (e) => {
+      const val = e.target.value;
+      if (sensDisplay) sensDisplay.innerText = `${val}%`;
+      this.minConfidence = parseInt(val, 10) / 100;
+    });
+
     // Lockdown
     document.getElementById('lockdown-btn')?.addEventListener('click', () => this.toggleLockdown());
     document.getElementById('cancel-lockdown-btn')?.addEventListener('click', () => this.toggleLockdown());

@@ -4,6 +4,11 @@ export class HUDEngine {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.mode = 'minimal'; // 'minimal', 'tactical', 'off'
+    this.themePrimary = '#00daf3';
+  }
+
+  setThemeColor(color) {
+    this.themePrimary = color;
   }
 
   resize(width, height) {

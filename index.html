@@ -110,9 +110,73 @@
     </nav>
 
     <!-- Trailing Quick Actions & Telemetry -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
       <!-- Live Clock -->
       <div class="font-data-mono text-xs text-on-surface-variant hidden md:block" id="live-clock">--:--:-- UTC</div>
+
+      <!-- Camera Feed Switcher Dropdown in Header -->
+      <div class="relative">
+        <button id="cam-selector-btn" title="Switch Camera / Video Optical Feed" class="flex items-center gap-1.5 px-3 py-1 bg-surface-container/70 hover:bg-surface-container border border-primary/30 rounded-full font-data-mono-sm text-[11px] text-primary-fixed transition-all hover:scale-105 shadow-md">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="material-symbols-outlined text-xs text-primary-container">videocam</span>
+          <span id="active-feed-label">CAM 1: MAIN</span>
+          <span class="material-symbols-outlined text-xs opacity-70">expand_more</span>
+        </button>
+        <!-- Dropdown Menu -->
+        <div id="cam-selector-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-[#0a1421]/95 border border-primary/30 rounded-xl p-3 shadow-2xl backdrop-blur-xl z-50 font-data-mono text-xs flex flex-col gap-2">
+          <div class="px-1 py-0.5 text-[10px] text-gray-400 font-bold border-b border-white/10 flex justify-between items-center">
+            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-primary-container">switch_video</span> DETECTED OPTICAL FEEDS</span>
+            <span id="cam-count-tag" class="text-primary-container font-bold text-[10px]">1 FOUND</span>
+          </div>
+          <div id="cam-feed-list" class="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-0.5">
+            <!-- Dynamic Feeds inserted here -->
+          </div>
+          <button id="refresh-cams-btn" class="mt-1 w-full py-1.5 text-[10px] bg-white/5 hover:bg-white/10 text-primary-fixed rounded text-center transition-colors flex items-center justify-center gap-1 border border-white/10">
+            <span class="material-symbols-outlined text-xs">sync</span>
+            <span>RE-SCAN HARDWARE DEVICES</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- UI Color Palette Switcher -->
+      <div class="relative">
+        <button id="theme-palette-btn" title="Tactical UI Color Palette" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-all text-on-surface-variant flex items-center justify-center">
+          <span class="material-symbols-outlined text-sm text-primary-container">palette</span>
+        </button>
+        <!-- Theme Dropdown Menu -->
+        <div id="theme-palette-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-[#0a1421]/95 border border-primary/30 rounded-xl p-3 shadow-2xl backdrop-blur-xl z-50 font-data-mono text-xs flex flex-col gap-2">
+          <div class="text-[10px] text-gray-400 font-bold border-b border-white/10 pb-1.5 flex justify-between items-center">
+            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-primary-container">palette</span> UI COLOR THEME</span>
+            <span id="active-theme-name" class="text-primary-container font-bold text-[10px]">CYAN</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button class="theme-select-btn flex items-center gap-2 p-1.5 rounded bg-black/40 hover:bg-white/10 border border-cyan-500/40 text-[10px] text-left transition-all" data-theme="cyan">
+              <span class="w-3 h-3 rounded-full bg-[#00e5ff] inline-block shadow-[0_0_8px_#00e5ff]"></span>
+              <span class="text-cyan-300 font-bold">CYAN</span>
+            </button>
+            <button class="theme-select-btn flex items-center gap-2 p-1.5 rounded bg-black/40 hover:bg-white/10 border border-green-500/40 text-[10px] text-left transition-all" data-theme="emerald">
+              <span class="w-3 h-3 rounded-full bg-[#00ff9d] inline-block shadow-[0_0_8px_#00ff9d]"></span>
+              <span class="text-green-300 font-bold">EMERALD</span>
+            </button>
+            <button class="theme-select-btn flex items-center gap-2 p-1.5 rounded bg-black/40 hover:bg-white/10 border border-amber-500/40 text-[10px] text-left transition-all" data-theme="amber">
+              <span class="w-3 h-3 rounded-full bg-[#ffba4b] inline-block shadow-[0_0_8px_#ffba4b]"></span>
+              <span class="text-amber-300 font-bold">AMBER</span>
+            </button>
+            <button class="theme-select-btn flex items-center gap-2 p-1.5 rounded bg-black/40 hover:bg-white/10 border border-red-500/40 text-[10px] text-left transition-all" data-theme="crimson">
+              <span class="w-3 h-3 rounded-full bg-[#ff453a] inline-block shadow-[0_0_8px_#ff453a]"></span>
+              <span class="text-red-300 font-bold">CRIMSON</span>
+            </button>
+            <button class="theme-select-btn flex items-center gap-2 p-1.5 rounded bg-black/40 hover:bg-white/10 border border-purple-500/40 text-[10px] text-left transition-all" data-theme="violet">
+              <span class="w-3 h-3 rounded-full bg-[#c084fc] inline-block shadow-[0_0_8px_#c084fc]"></span>
+              <span class="text-purple-300 font-bold">VIOLET</span>
+            </button>
+            <button class="theme-select-btn flex items-center gap-2 p-1.5 rounded bg-black/40 hover:bg-white/10 border border-yellow-500/40 text-[10px] text-left transition-all" data-theme="gold">
+              <span class="w-3 h-3 rounded-full bg-[#facc15] inline-block shadow-[0_0_8px_#facc15]"></span>
+              <span class="text-yellow-300 font-bold">GOLD</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Online Status Pill -->
       <div class="flex items-center gap-2 px-3 py-1 bg-surface-container/60 rounded-full border border-primary/20">
@@ -121,17 +185,17 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-1.5 text-on-surface-variant">
+      <div class="flex items-center gap-1 text-on-surface-variant">
         <button id="nav-notifications-btn" title="Alerts Drawer" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
           <span class="material-symbols-outlined text-sm">notifications</span>
         </button>
-        <button id="nav-settings-btn" title="Settings" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
+        <button id="nav-settings-btn" title="Settings & Themes" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
           <span class="material-symbols-outlined text-sm">settings</span>
         </button>
         <button id="nav-schedule-btn" title="Schedule & Duty Roster" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
           <span class="material-symbols-outlined text-sm">schedule</span>
         </button>
-        <button id="sound-toggle-btn" title="Toggle Sound" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
+        <button id="sound-toggle-btn" title="Toggle Sound (M)" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
           <span id="sound-icon" class="material-symbols-outlined text-sm">volume_up</span>
         </button>
         <button id="snapshot-btn" title="Capture Snapshot (Space)" class="p-1.5 rounded hover:text-primary-fixed hover:bg-white/5 transition-colors">
@@ -212,6 +276,16 @@
                 <span id="target-lower-text" class="text-cyan-300 font-bold">Dark</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Floating Multi-Feed Quick Switcher Pill Bar (Top Center) -->
+        <div id="viewport-feed-switch-bar" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 bg-[#0a1421]/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-primary/30 shadow-2xl">
+          <span class="font-data-mono text-[10px] text-gray-400 mr-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs text-primary-container">videocam</span> FEEDS:
+          </span>
+          <div id="viewport-feed-pills-container" class="flex items-center gap-1">
+            <!-- Dynamic feed switcher pills -->
           </div>
         </div>
 
@@ -624,20 +698,97 @@
 
   <!-- 5. SETTINGS MODAL -->
   <div id="settings-modal" class="tactical-modal fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="glass-panel w-full max-w-2xl max-h-[85vh] rounded-xl border border-cyan-500/40 flex flex-col overflow-hidden shadow-2xl">
-      <div class="flex justify-between items-center px-6 py-3.5 border-b border-cyan-500/30 bg-[#0c1a2e]">
-        <div class="flex items-center gap-3"><span class="material-symbols-outlined text-cyan-400 text-2xl">settings</span><h3 class="font-headline-md text-base font-bold text-cyan-300">TACTICAL HUD SETTINGS</h3></div>
+    <div class="glass-panel w-full max-w-2xl max-h-[90vh] rounded-xl border border-primary/40 flex flex-col overflow-hidden shadow-2xl">
+      <div class="flex justify-between items-center px-6 py-3.5 border-b border-primary/30 bg-[#0c1a2e]">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary-container text-2xl">settings</span>
+          <h3 class="font-headline-md text-base font-bold text-primary-fixed">TACTICAL COMMAND & THEME SETTINGS</h3>
+        </div>
         <button id="close-settings-btn" class="p-1 rounded text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
       </div>
-      <div class="p-6 space-y-4 font-data-mono text-xs text-gray-300">
-        <div class="space-y-1">
-          <label class="font-bold text-cyan-300">DETECTION SENSITIVITY</label>
-          <input type="range" min="30" max="80" value="45" class="w-full accent-cyan-400" />
+      <div class="p-6 space-y-5 font-data-mono text-xs text-gray-300 overflow-y-auto custom-scrollbar">
+        
+        <!-- Theme Palette Customizer -->
+        <div class="space-y-2">
+          <label class="font-bold text-primary-fixed flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-primary-container">palette</span>
+            <span>TACTICAL HUD UI COLOR THEME</span>
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button class="settings-theme-btn p-2.5 rounded-lg bg-black/50 border border-cyan-500/50 hover:bg-cyan-950/40 text-left transition-all flex items-center gap-2.5" data-theme="cyan">
+              <span class="w-4 h-4 rounded-full bg-[#00e5ff] shadow-[0_0_10px_#00e5ff]"></span>
+              <div>
+                <span class="font-bold text-cyan-300 block text-xs">CYAN MATRIX</span>
+                <span class="text-[9px] text-gray-400">Default Tactical</span>
+              </div>
+            </button>
+            <button class="settings-theme-btn p-2.5 rounded-lg bg-black/50 border border-green-500/50 hover:bg-green-950/40 text-left transition-all flex items-center gap-2.5" data-theme="emerald">
+              <span class="w-4 h-4 rounded-full bg-[#00ff9d] shadow-[0_0_10px_#00ff9d]"></span>
+              <div>
+                <span class="font-bold text-green-300 block text-xs">EMERALD OPS</span>
+                <span class="text-[9px] text-gray-400">Night-Ops Green</span>
+              </div>
+            </button>
+            <button class="settings-theme-btn p-2.5 rounded-lg bg-black/50 border border-amber-500/50 hover:bg-amber-950/40 text-left transition-all flex items-center gap-2.5" data-theme="amber">
+              <span class="w-4 h-4 rounded-full bg-[#ffba4b] shadow-[0_0_10px_#ffba4b]"></span>
+              <div>
+                <span class="font-bold text-amber-300 block text-xs">AMBER FLIR</span>
+                <span class="text-[9px] text-gray-400">FLIR Thermal Gold</span>
+              </div>
+            </button>
+            <button class="settings-theme-btn p-2.5 rounded-lg bg-black/50 border border-red-500/50 hover:bg-red-950/40 text-left transition-all flex items-center gap-2.5" data-theme="crimson">
+              <span class="w-4 h-4 rounded-full bg-[#ff453a] shadow-[0_0_10px_#ff453a]"></span>
+              <div>
+                <span class="font-bold text-red-300 block text-xs">CRIMSON RED</span>
+                <span class="text-[9px] text-gray-400">Combat Alert</span>
+              </div>
+            </button>
+            <button class="settings-theme-btn p-2.5 rounded-lg bg-black/50 border border-purple-500/50 hover:bg-purple-950/40 text-left transition-all flex items-center gap-2.5" data-theme="violet">
+              <span class="w-4 h-4 rounded-full bg-[#c084fc] shadow-[0_0_10px_#c084fc]"></span>
+              <div>
+                <span class="font-bold text-purple-300 block text-xs">VIOLET SYNTH</span>
+                <span class="text-[9px] text-gray-400">Cyber Stealth</span>
+              </div>
+            </button>
+            <button class="settings-theme-btn p-2.5 rounded-lg bg-black/50 border border-yellow-500/50 hover:bg-yellow-950/40 text-left transition-all flex items-center gap-2.5" data-theme="gold">
+              <span class="w-4 h-4 rounded-full bg-[#facc15] shadow-[0_0_10px_#facc15]"></span>
+              <div>
+                <span class="font-bold text-yellow-300 block text-xs">SOLAR GOLD</span>
+                <span class="text-[9px] text-gray-400">Titanium Deck</span>
+              </div>
+            </button>
+          </div>
         </div>
-        <div class="flex items-center justify-between border-t border-white/10 pt-3">
-          <span>AUDIBLE ALERTS:</span>
-          <button id="setting-audio-toggle" class="px-3 py-1 bg-green-500/20 text-green-300 border border-green-500/40 rounded font-bold">ENABLED</button>
+
+        <!-- Camera / Optical Source Selector -->
+        <div class="space-y-1.5 border-t border-white/10 pt-4">
+          <label class="font-bold text-primary-fixed flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-primary-container">videocam</span>
+            <span>ACTIVE OPTICAL FEED SOURCE</span>
+          </label>
+          <select id="settings-camera-select" class="w-full bg-[#0a1421] border border-primary/40 rounded px-3 py-2 text-primary-fixed font-data-mono text-xs focus:outline-none">
+            <option value="default">Loading Optical Devices...</option>
+          </select>
         </div>
+
+        <!-- Sensitivity Slider -->
+        <div class="space-y-1.5 border-t border-white/10 pt-4">
+          <div class="flex justify-between">
+            <label class="font-bold text-primary-fixed">DETECTION SENSITIVITY (CONFIDENCE)</label>
+            <span id="sensitivity-display" class="text-primary-container font-bold">45%</span>
+          </div>
+          <input type="range" id="sensitivity-slider" min="20" max="80" value="45" class="w-full accent-cyan-400" />
+        </div>
+
+        <!-- Audio Alerts Toggle -->
+        <div class="flex items-center justify-between border-t border-white/10 pt-4">
+          <div>
+            <span class="font-bold text-white block">AUDIBLE ALERTS & SIRENS</span>
+            <span class="text-gray-400 text-[10px]">Play synthetic Web Audio cues for target detections</span>
+          </div>
+          <button id="setting-audio-toggle" class="px-3 py-1.5 bg-green-500/20 text-green-300 border border-green-500/40 rounded font-bold transition-all">ENABLED</button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -958,6 +1109,7 @@
         varying vec2 v_texCoord;
         uniform float u_time;
         uniform vec2 u_resolution;
+        uniform vec3 u_theme_color;
 
         float grid(vec2 uv, float spacing) {
           vec2 lines = mod(uv, spacing);
@@ -969,7 +1121,7 @@
           vec2 uv = v_texCoord;
           vec2 pixel_uv = uv * u_resolution;
           vec3 bgColor = vec3(0.031, 0.043, 0.063); // #080b10
-          vec3 gridColor = vec3(0.0, 0.898, 1.0) * 0.025;
+          vec3 gridColor = u_theme_color * 0.035;
           float scanline = sin(uv.y * 120.0 + u_time * 2.0) * 0.01;
           float g1 = grid(pixel_uv, 36.0) * 0.5;
           float g2 = grid(pixel_uv, 180.0);
@@ -1000,11 +1152,18 @@
 
       const uTime = gl.getUniformLocation(prog, 'u_time');
       const uRes = gl.getUniformLocation(prog, 'u_resolution');
+      const uTheme = gl.getUniformLocation(prog, 'u_theme_color');
+
+      let currentThemeR = 0.0, currentThemeG = 0.898, currentThemeB = 1.0;
+      window.setShaderThemeColor = function(r, g, b) {
+        currentThemeR = r; currentThemeG = g; currentThemeB = b;
+      };
 
       function render(t) {
         gl.viewport(0, 0, canvas.width, canvas.height);
         if (uTime) gl.uniform1f(uTime, t * 0.001);
         if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+        if (uTheme) gl.uniform3f(uTheme, currentThemeR, currentThemeG, currentThemeB);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         requestAnimationFrame(render);
       }

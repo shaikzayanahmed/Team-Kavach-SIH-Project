@@ -9,6 +9,20 @@
   --surface-container: #17202e;
   --surface-high: #212a39;
   --surface-highest: #2c3544;
+  --primary: #00daf3;
+  --primary-rgb: 0, 218, 243;
+  --primary-container: #00e5ff;
+  --primary-bright: #c3f5ff;
+  --primary-fixed: #9cf0ff;
+  --primary-fixed-dim: #00daf3;
+  --surface-tint: #00daf3;
+  --surface-border: rgba(0, 229, 255, 0.2);
+  --glass-bg: rgba(10, 20, 33, 0.75);
+  --header-bg: rgba(10, 20, 33, 0.85);
+  --dock-bg: rgba(6, 14, 28, 0.9);
+  --reticle-color: rgba(0, 229, 255, 0.7);
+  --theme-glow: 0 0 15px rgba(0, 229, 255, 0.4);
+  --radar-color: rgba(0, 229, 255, 0.8);
   --cyan: #00e5ff;
   --cyan-dim: #00daf3;
   --cyan-bright: #c3f5ff;
@@ -23,6 +37,108 @@
   --text-dim: #5a6e78;
 }
 
+body.theme-cyan {
+  --primary: #00daf3;
+  --primary-rgb: 0, 218, 243;
+  --primary-container: #00e5ff;
+  --primary-bright: #c3f5ff;
+  --primary-fixed: #9cf0ff;
+  --primary-fixed-dim: #00daf3;
+  --surface-tint: #00daf3;
+  --surface-border: rgba(0, 229, 255, 0.2);
+  --glass-bg: rgba(10, 20, 33, 0.75);
+  --header-bg: rgba(10, 20, 33, 0.85);
+  --dock-bg: rgba(6, 14, 28, 0.9);
+  --reticle-color: rgba(0, 229, 255, 0.7);
+  --theme-glow: 0 0 15px rgba(0, 229, 255, 0.4);
+  --radar-color: rgba(0, 229, 255, 0.8);
+}
+
+body.theme-emerald {
+  --primary: #00ff9d;
+  --primary-rgb: 0, 255, 157;
+  --primary-container: #10b981;
+  --primary-bright: #a7f3d0;
+  --primary-fixed: #6ee7b7;
+  --primary-fixed-dim: #059669;
+  --surface-tint: #10b981;
+  --surface-border: rgba(0, 255, 157, 0.25);
+  --glass-bg: rgba(6, 26, 18, 0.78);
+  --header-bg: rgba(6, 26, 18, 0.88);
+  --dock-bg: rgba(3, 18, 12, 0.92);
+  --reticle-color: rgba(0, 255, 157, 0.75);
+  --theme-glow: 0 0 15px rgba(0, 255, 157, 0.45);
+  --radar-color: rgba(0, 255, 157, 0.85);
+}
+
+body.theme-amber {
+  --primary: #ffba4b;
+  --primary-rgb: 255, 186, 75;
+  --primary-container: #ff9500;
+  --primary-bright: #fed7aa;
+  --primary-fixed: #fcd34d;
+  --primary-fixed-dim: #d97706;
+  --surface-tint: #ffba4b;
+  --surface-border: rgba(255, 186, 75, 0.25);
+  --glass-bg: rgba(28, 20, 6, 0.78);
+  --header-bg: rgba(28, 20, 6, 0.88);
+  --dock-bg: rgba(18, 12, 3, 0.92);
+  --reticle-color: rgba(255, 186, 75, 0.75);
+  --theme-glow: 0 0 15px rgba(255, 186, 75, 0.45);
+  --radar-color: rgba(255, 186, 75, 0.85);
+}
+
+body.theme-crimson {
+  --primary: #ff453a;
+  --primary-rgb: 255, 69, 58;
+  --primary-container: #ff2a2a;
+  --primary-bright: #fecaca;
+  --primary-fixed: #fca5a5;
+  --primary-fixed-dim: #dc2626;
+  --surface-tint: #ff453a;
+  --surface-border: rgba(255, 69, 58, 0.3);
+  --glass-bg: rgba(32, 8, 10, 0.8);
+  --header-bg: rgba(32, 8, 10, 0.9);
+  --dock-bg: rgba(20, 4, 6, 0.94);
+  --reticle-color: rgba(255, 69, 58, 0.8);
+  --theme-glow: 0 0 15px rgba(255, 69, 58, 0.5);
+  --radar-color: rgba(255, 69, 58, 0.9);
+}
+
+body.theme-violet {
+  --primary: #c084fc;
+  --primary-rgb: 192, 132, 252;
+  --primary-container: #a855f7;
+  --primary-bright: #f3e8ff;
+  --primary-fixed: #d8b4fe;
+  --primary-fixed-dim: #9333ea;
+  --surface-tint: #c084fc;
+  --surface-border: rgba(192, 132, 252, 0.25);
+  --glass-bg: rgba(24, 10, 36, 0.78);
+  --header-bg: rgba(24, 10, 36, 0.88);
+  --dock-bg: rgba(14, 5, 22, 0.92);
+  --reticle-color: rgba(192, 132, 252, 0.75);
+  --theme-glow: 0 0 15px rgba(192, 132, 252, 0.45);
+  --radar-color: rgba(192, 132, 252, 0.85);
+}
+
+body.theme-gold {
+  --primary: #facc15;
+  --primary-rgb: 250, 204, 21;
+  --primary-container: #eab308;
+  --primary-bright: #fef08a;
+  --primary-fixed: #fde047;
+  --primary-fixed-dim: #ca8a04;
+  --surface-tint: #facc15;
+  --surface-border: rgba(250, 204, 21, 0.25);
+  --glass-bg: rgba(24, 22, 10, 0.78);
+  --header-bg: rgba(24, 22, 10, 0.88);
+  --dock-bg: rgba(15, 14, 5, 0.92);
+  --reticle-color: rgba(250, 204, 21, 0.75);
+  --theme-glow: 0 0 15px rgba(250, 204, 21, 0.45);
+  --radar-color: rgba(250, 204, 21, 0.85);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -31,12 +147,13 @@
 }
 
 body {
-  background-color: #080b10;
+  background-color: var(--bg);
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+  transition: background-color 0.3s ease;
 }
 
 .font-mono {
@@ -49,17 +166,17 @@ body {
 
 /* Minimalist Glassmorphic Panels */
 .glass-panel {
-  background: rgba(10, 20, 33, 0.72);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(0, 229, 255, 0.15);
+  border: 1px solid var(--surface-border);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.5);
   position: relative;
   transition: all 0.2s ease;
 }
 
 .glass-panel-glow {
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.18), inset 0 1px 0 0 rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.25), inset 0 1px 0 0 rgba(var(--primary-rgb), 0.3);
 }
 
 .glass-panel-amber {
@@ -74,7 +191,7 @@ body {
 
 /* Glow Utilities */
 .text-glow {
-  text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+  text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.7);
 }
 
 .text-glow-amber {
@@ -85,14 +202,27 @@ body {
   text-shadow: 0 0 12px rgba(255, 69, 58, 0.6);
 }
 
+/* Theme accent helpers */
+.theme-accent-text {
+  color: var(--primary);
+}
+
+.theme-accent-border {
+  border-color: var(--surface-border);
+}
+
+.theme-accent-bg {
+  background-color: var(--primary);
+}
+
 /* Minimalist Radar Sweep */
 .radar-sweep {
   position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  background: radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, transparent 70%);
+  border: 1px solid var(--surface-border);
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 0.15) 0%, transparent 70%);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -104,7 +234,7 @@ body {
   left: 50%;
   width: 50%;
   height: 50%;
-  background: conic-gradient(from 0deg, rgba(0, 229, 255, 0.8), transparent 50deg);
+  background: conic-gradient(from 0deg, var(--radar-color), transparent 50deg);
   transform-origin: 0% 0%;
   animation: radar-spin 3.5s linear infinite;
 }
@@ -119,9 +249,10 @@ body {
   position: absolute;
   width: 16px;
   height: 16px;
-  border: 1.5px solid rgba(0, 229, 255, 0.7);
+  border: 1.5px solid var(--reticle-color);
   pointer-events: none;
   z-index: 10;
+  transition: border-color 0.3s ease;
 }
 
 .reticle-tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
