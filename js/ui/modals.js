@@ -1,4 +1,4 @@
-// UI Modal Views & Dialog Manager
+// UI Modal Views & Tactical Dialog Manager
 export class ModalController {
   constructor(dbService, audioService, visionEngine, nvidiaService, onWhitelistUpdated, onUnknownUpdated, onNvidiaStatusChanged) {
     this.db = dbService;
@@ -10,11 +10,115 @@ export class ModalController {
     this.onNvidiaStatusChanged = onNvidiaStatusChanged;
     this.activeInspectorId = null;
     this.currentInterrogateFrame = null;
+    this.activeDeepDiveFeed = 'POST 4 - ALPHA';
     this.bindEvents();
     this.updateNvidiaUI();
   }
 
   bindEvents() {
+    // Navigation bar buttons
+    document.getElementById('nav-operations-btn')?.addEventListener('click', () => this.openIncidentPanel());
+    document.getElementById('side-operations-btn')?.addEventListener('click', () => this.openIncidentPanel());
+    document.getElementById('close-incident-btn')?.addEventListener('click', () => this.close('incident-intelligence-modal'));
+    document.getElementById('counter-intrusions-card')?.addEventListener('click', () => this.openIncidentPanel());
+    document.getElementById('dispatch-guard-btn')?.addEventListener('click', () => this.dispatchGuardPost());
+
+    // Watchlist Match Verification (Drill / Match from Stitch 5f434c2373404c8fbc6ab08ed996e7b9)
+    document.getElementById('side-intercept-btn')?.addEventListener('click', () => this.openWatchlistMatchModal());
+    document.getElementById('counter-watchlist-card')?.addEventListener('click', () => this.openWatchlistMatchModal());
+    document.getElementById('close-watchlist-match-btn')?.addEventListener('click', () => this.close('watchlist-match-modal'));
+    document.getElementById('dismiss-match-btn')?.addEventListener('click', () => this.dismissMatch());
+    document.getElementById('confirm-match-btn')?.addEventListener('click', () => this.confirmMatchAndEscalate());
+
+    // Camera Deep-Dive (SEC-07A from Stitch ff6e17d9eb204220baa80fd60d5a8947)
+    document.getElementById('aux-feed-1')?.addEventListener('click', () => this.openCameraDeepDive('POST 4 - ALPHA'));
+    document.getElementById('aux-feed-2')?.addEventListener('click', () => this.openCameraDeepDive('POST 7 - BETA'));
+    document.getElementById('aux-feed-3')?.addEventListener('click', () => this.openCameraDeepDive('DRONE SECTOR 9'));
+    document.getElementById('close-deepdive-btn')?.addEventListener('click', () => this.close('camera-deepdive-modal'));
+    document.getElementById('map-deepdive-btn')?.addEventListener('click', () => this.openCameraDeepDive('POST 4 - ALPHA'));
+    document.getElementById('deepdive-make-primary-btn')?.addEventListener('click', () => {
+      this.showToast('Optics Re-Routed', `Active Primary Stream set to ${this.activeDeepDiveFeed}`, 'success');
+      this.close('camera-deepdive-modal');
+    });
+
+    // Interactive Map Pins
+    document.getElementById('pin-p1')?.addEventListener('click', () => {
+      this.showToast('Sector Switched', 'Viewing Primary Live Camera (Post 1)', 'info');
+      this.audio.play('click');
+    });
+    document.getElementById('pin-p4')?.addEventListener('click', () => this.openCameraDeepDive('POST 4 - ALPHA'));
+    document.getElementById('pin-p7')?.addEventListener('click', () => this.openCameraDeepDive('POST 7 - BETA'));
+    document.getElementById('pin-p9')?.addEventListener('click', () => this.openCameraDeepDive('DRONE SECTOR 9'));
+
+    // Deep-dive filter buttons
+    document.querySelectorAll('.deepdive-filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const filter = e.target.dataset.filter;
+        const img = document.getElementById('deepdive-stream-img');
+        if (img) {
+          img.className = `w-full h-full object-cover vision-${filter}`;
+        }
+        document.querySelectorAll('.deepdive-filter-btn').forEach(b => {
+          b.className = (b.dataset.filter === filter)
+            ? 'deepdive-filter-btn px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+            : 'deepdive-filter-btn px-2 py-1 rounded bg-black/40 text-gray-400 border border-white/10 hover:text-white';
+        });
+        this.audio.play('click');
+      });
+    });
+
+    // PTZ buttons
+    document.querySelectorAll('.ptz-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.audio.play('click');
+        this.showToast('PTZ Vector', 'Camera pan/tilt motors calibrated', 'info');
+      });
+    });
+
+    // Multi-Camera Grid Matrix
+    document.getElementById('side-cameras-btn')?.addEventListener('click', () => this.openCameraMatrix());
+    document.getElementById('close-matrix-btn')?.addEventListener('click', () => this.close('camera-matrix-modal'));
+
+    // Sensors Telemetry
+    document.getElementById('side-sensors-btn')?.addEventListener('click', () => this.openSensors());
+    document.getElementById('close-sensors-btn')?.addEventListener('click', () => this.close('sensor-telemetry-modal'));
+
+    // Analytics Modal
+    document.getElementById('nav-analytics-btn')?.addEventListener('click', () => this.openAnalytics());
+    document.getElementById('close-analytics-btn')?.addEventListener('click', () => this.close('analytics-modal'));
+
+    // System Health Modal
+    document.getElementById('side-health-btn')?.addEventListener('click', () => this.openHealth());
+    document.getElementById('close-health-btn')?.addEventListener('click', () => this.close('health-modal'));
+
+    // Settings Modal
+    document.getElementById('nav-settings-btn')?.addEventListener('click', () => this.openSettings());
+    document.getElementById('close-settings-btn')?.addEventListener('click', () => this.close('settings-modal'));
+    document.getElementById('setting-audio-toggle')?.addEventListener('click', (e) => {
+      this.audio.soundEnabled = !this.audio.soundEnabled;
+      e.target.innerText = this.audio.soundEnabled ? 'ENABLED' : 'MUTED';
+      e.target.className = this.audio.soundEnabled 
+        ? 'px-3 py-1 bg-green-500/20 text-green-300 border border-green-500/40 rounded font-bold'
+        : 'px-3 py-1 bg-red-500/20 text-red-300 border border-red-500/40 rounded font-bold';
+      this.showToast('Audio Settings', `Tactical Audio ${this.audio.soundEnabled ? 'Enabled' : 'Muted'}`, 'info');
+    });
+
+    // Duty Schedule Modal
+    document.getElementById('nav-schedule-btn')?.addEventListener('click', () => this.openSchedule());
+    document.getElementById('close-schedule-btn')?.addEventListener('click', () => this.close('schedule-modal'));
+
+    // Operator Manual & Help
+    document.getElementById('side-help-btn')?.addEventListener('click', () => this.openHelp());
+    document.getElementById('close-help-btn')?.addEventListener('click', () => this.close('help-modal'));
+
+    // Terminal Logs
+    document.getElementById('side-logs-btn')?.addEventListener('click', () => this.openTerminalLogs());
+    document.getElementById('close-terminal-logs-btn')?.addEventListener('click', () => this.close('terminal-logs-modal'));
+
+    // Notifications Center Drawer
+    document.getElementById('nav-notifications-btn')?.addEventListener('click', () => this.toggleNotificationsDrawer());
+    document.getElementById('close-notifications-drawer-btn')?.addEventListener('click', () => this.closeNotificationsDrawer());
+
     // Whitelist buttons
     document.getElementById('nav-whitelist-btn')?.addEventListener('click', () => this.openWhitelist());
     document.getElementById('side-whitelist-btn')?.addEventListener('click', () => this.openWhitelist());
@@ -65,6 +169,7 @@ export class ModalController {
       this.db.saveWhitelist();
       this.renderWhitelist();
       if (this.onWhitelistUpdated) this.onWhitelistUpdated();
+      this.showToast('Whitelist Reset', 'Restored default authorized personnel registry', 'info');
     });
 
     // Unknown search & filters
@@ -77,14 +182,21 @@ export class ModalController {
       });
     });
 
-    document.getElementById('export-unknown-json-btn')?.addEventListener('click', () => this.db.exportUnknownJSON());
-    document.getElementById('export-unknown-csv-btn')?.addEventListener('click', () => this.db.exportUnknownCSV());
+    document.getElementById('export-unknown-json-btn')?.addEventListener('click', () => {
+      this.db.exportUnknownJSON();
+      this.showToast('Export Ready', 'Exported dossiers as JSON archive', 'success');
+    });
+    document.getElementById('export-unknown-csv-btn')?.addEventListener('click', () => {
+      this.db.exportUnknownCSV();
+      this.showToast('Export Ready', 'Exported dossiers as CSV spreadsheet', 'success');
+    });
     document.getElementById('clear-unknown-db-btn')?.addEventListener('click', () => {
       if (confirm('Purge all unknown subject dossiers?')) {
         this.db.unknowns = [];
         this.db.saveUnknowns();
         this.renderUnknowns();
         if (this.onUnknownUpdated) this.onUnknownUpdated();
+        this.showToast('Database Purged', 'Cleared all logged unknown records', 'info');
       }
     });
 
@@ -106,8 +218,162 @@ export class ModalController {
     });
   }
 
-  open(id) { document.getElementById(id)?.classList.remove('hidden'); }
-  close(id) { document.getElementById(id)?.classList.add('hidden'); }
+  open(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('hidden');
+      this.audio.play('click');
+    }
+  }
+
+  close(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+
+  showToast(title, message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    const borderCol = type === 'critical' ? 'border-red-500 bg-red-950/90 text-red-100' : (type === 'success' ? 'border-green-500 bg-[#061e16]/90 text-green-100' : 'border-cyan-500 bg-[#061426]/90 text-cyan-100');
+
+    toast.className = `pointer-events-auto border ${borderCol} p-3 rounded-lg shadow-xl font-data-mono text-xs max-w-sm flex items-start gap-2.5 backdrop-blur-md animate-fade-in`;
+    toast.innerHTML = `
+      <span class="material-symbols-outlined text-base mt-0.5">${type === 'critical' ? 'warning' : (type === 'success' ? 'check_circle' : 'info')}</span>
+      <div class="flex-1">
+        <span class="font-bold block">${title}</span>
+        <span class="text-[11px] opacity-90">${message}</span>
+      </div>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
+  openIncidentPanel() {
+    this.open('incident-intelligence-modal');
+    // Refresh timeline timestamps
+    const now = new Date();
+    ['ekg-time-1', 'ekg-time-2', 'ekg-time-3', 'ekg-time-4'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const d = new Date(now.getTime() - (4 - i) * 20000);
+        el.innerText = d.toISOString().substring(11, 19);
+      }
+    });
+  }
+
+  dispatchGuardPost() {
+    this.audio.play('radio');
+    this.showToast('SECURITY DISPATCHED', 'Nearest Sector Response Unit notified via tactical radio encrypted relay.', 'critical');
+    const btn = document.getElementById('dispatch-guard-btn');
+    if (btn) {
+      btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> <span>DISPATCH CONFIRMED (SECTOR ALPHA)</span>';
+      btn.className = 'px-8 py-3 bg-green-600 text-white font-label-caps text-xs uppercase tracking-wider font-bold rounded-lg flex items-center gap-2 transition-all';
+      setTimeout(() => {
+        btn.innerHTML = '<span class="material-symbols-outlined text-base">local_police</span> <span>NOTIFY NEAREST GUARD POST</span>';
+        btn.className = 'px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-label-caps text-xs uppercase tracking-wider font-bold rounded-lg flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(255,69,58,0.4)]';
+      }, 4000);
+    }
+  }
+
+  openWatchlistMatchModal() {
+    this.open('watchlist-match-modal');
+    const liveImg = document.getElementById('match-live-preview-img');
+    const knownImg = document.getElementById('match-known-photo');
+    
+    // Grab live frame or fallback
+    const video = document.getElementById('webcam-video');
+    if (video && video.readyState === 4 && liveImg) {
+      const c = document.createElement('canvas');
+      c.width = 320; c.height = 240;
+      c.getContext('2d').drawImage(video, 0, 0, 320, 240);
+      liveImg.src = c.toDataURL('image/jpeg', 0.85);
+    } else if (liveImg) {
+      liveImg.src = this.db.createAvatarDataUrl('#00e5ff', 'TGT');
+    }
+
+    if (knownImg) {
+      const wanted = this.db.criminals[0];
+      knownImg.src = wanted ? wanted.photo : this.db.createAvatarDataUrl('#ff453a', 'WNT');
+    }
+  }
+
+  dismissMatch() {
+    this.close('watchlist-match-modal');
+    this.audio.play('click');
+    this.showToast('Match Dismissed', 'Incident record updated: False positive dismissed by operator.', 'info');
+  }
+
+  confirmMatchAndEscalate() {
+    this.close('watchlist-match-modal');
+    this.audio.play('critical');
+    this.showToast('CRITICAL ESCALATION', 'Fugitive record confirmed. Automated sector lockdown & alert dispatches active.', 'critical');
+  }
+
+  openCameraDeepDive(feedName = 'POST 4 - ALPHA') {
+    this.activeDeepDiveFeed = feedName;
+    this.open('camera-deepdive-modal');
+    
+    const title = document.getElementById('deepdive-camera-title');
+    const feedText = document.getElementById('deepdive-feed-name');
+    const streamImg = document.getElementById('deepdive-stream-img');
+
+    if (title) title.innerText = `OPTICAL DEEP-DIVE: ${feedName}`;
+    if (feedText) feedText.innerText = `${feedName} (1080P/60FPS HDR)`;
+
+    // Create high-res simulated feed preview
+    if (streamImg) {
+      const c = document.createElement('canvas');
+      c.width = 640; c.height = 360;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#060e1c';
+      ctx.fillRect(0, 0, 640, 360);
+      
+      // Grid lines
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 640; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 360); ctx.stroke(); }
+      for (let y = 0; y < 360; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(640, y); ctx.stroke(); }
+
+      // Target reticle
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(280, 140, 80, 120);
+      ctx.fillStyle = '#00e5ff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`TARGET #${feedName.includes('7') ? 'B419' : 'A231'} [0.94 CONF]`, 280, 130);
+
+      streamImg.src = c.toDataURL('image/jpeg', 0.9);
+    }
+  }
+
+  openCameraMatrix() { this.open('camera-matrix-modal'); }
+  openSensors() { this.open('sensor-telemetry-modal'); }
+  openAnalytics() { this.open('analytics-modal'); }
+  openHealth() { this.open('health-modal'); }
+  openSettings() { this.open('settings-modal'); }
+  openSchedule() { this.open('schedule-modal'); }
+  openHelp() { this.open('help-modal'); }
+  openTerminalLogs() { this.open('terminal-logs-modal'); }
+
+  toggleNotificationsDrawer() {
+    const drawer = document.getElementById('notifications-drawer');
+    if (drawer) {
+      drawer.classList.toggle('hidden');
+      this.audio.play('click');
+    }
+  }
+
+  closeNotificationsDrawer() {
+    const drawer = document.getElementById('notifications-drawer');
+    if (drawer) drawer.classList.add('hidden');
+  }
 
   openWhitelist() {
     this.open('whitelist-modal');
@@ -352,6 +618,7 @@ export class ModalController {
     this.db.saveWhitelist();
     this.renderWhitelist();
     this.audio.play('friendly');
+    this.showToast('Friendly Enrolled', `${name} registered as Whitelisted / Non-Intruder`, 'success');
     if (this.onWhitelistUpdated) this.onWhitelistUpdated();
   }
 
@@ -546,6 +813,7 @@ export class ModalController {
     this.db.saveWhitelist();
     this.close('dossier-inspector-modal');
     this.audio.play('friendly');
+    this.showToast('Friendly Enrolled', `${d.id} converted to authorized personnel`, 'success');
     if (this.onWhitelistUpdated) this.onWhitelistUpdated();
   }
 
@@ -580,6 +848,7 @@ export class ModalController {
         const id = e.currentTarget.dataset.id;
         this.vision.simulatedWantedId = (this.vision.simulatedWantedId === id) ? null : id;
         this.renderCriminals();
+        this.showToast('Simulation State', this.vision.simulatedWantedId ? `Simulating match for ${id}` : 'Stopped simulation drill', 'info');
       });
     });
   }
